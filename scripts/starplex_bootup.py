@@ -6,7 +6,7 @@ from starplex.database.connection import connect
 
 
 def main():
-    connect()
+    connect(host="localhost", port=5432, name="jsick", user="jsick")
     print starplex.database.meta.engine
     print starplex.database.meta.Session
 
