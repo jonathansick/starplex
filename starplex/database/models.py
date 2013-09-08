@@ -70,7 +70,7 @@ class Observation(Base):
     catalogstar = relationship("CatalogStar",
             backref=backref('observations', order_by=id))
 
-    def __init__(self, mag, magerr, cfrac):
+    def __init__(self, mag, magerr):
         self.mag = mag
         self.magerr = magerr
 
@@ -83,13 +83,13 @@ class Catalog(Base):
     __tablename__ = 'catalog'
 
     id = Column(Integer, primary_key=True)
-    kind = Column(String)
+    catalogname = Column(String)
     catalogpath = Column(String)
     fitspath = Column(String)
     telescope = Column(String)
 
-    def __init__(self, kind, catalogpath, fitspath, telescope):
-        self.kind = kind
+    def __init__(self, catalogname, catalogpath, fitspath, telescope):
+        self.catalogname = catalogname
         self.catalogpath = catalogpath
         self.fitspath = fitspath
         self.telescope
@@ -114,12 +114,12 @@ class CatalogStar(Base):
     # Many to one
     catalog_id = Column(Integer, ForeignKey('catalog.id'))
     catalog = relationship("Catalog",
-            backref=backref('observations', order_by=id))
+            backref=backref('catalog_stars', order_by=id))
 
     # Reference the star we associate to
     star_id = Column(Integer, ForeignKey('star.id'))
     star = relationship("Star",
-            backref=backref('observations', order_by=id))
+            backref=backref('catalog_stars', order_by=id))
 
     def __init__(self, x, y, ra, dec, cfrac):
         self.x = x
