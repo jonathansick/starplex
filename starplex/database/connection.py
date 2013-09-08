@@ -38,8 +38,24 @@ def connect(host="localhost", port=5432, user=None, name=None, password=None):
     import models
     url = _build_url(host, port, name, user, password)
     meta.engine = create_engine(url)
-    meta.Base.metadata.create_all(meta.engine, checkfirst=True)
+    create_all()
     meta.Session = sessionmaker(bind=meta.engine)
+
+
+def drop_all():
+    """Delete all tables.
+    
+    Needs a connection to already be established with :func:`connect`.
+    """
+    meta.Base.metadata.drop_all()
+
+
+def create_all():
+    """Create all tables.
+    
+    Needs a connection to already be established with :func:`connect`.
+    """
+    meta.Base.metadata.create_all(meta.engine, checkfirst=True)
 
 
 def _build_url(host, port, name, user, password):
