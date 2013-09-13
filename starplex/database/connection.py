@@ -37,25 +37,26 @@ def connect(host="localhost", port=5432, user=None, name=None, password=None):
     # you will have to import them first before calling init_db()
     import models
     url = _build_url(host, port, name, user, password)
-    meta.engine = create_engine(url)
-    create_all()
-    meta.Session = sessionmaker(bind=meta.engine)
+    engine = create_engine(url)
+    create_all(engine)
+    Session = sessionmaker(bind=engine)
+    return engine, Session
 
 
-def drop_all():
+def drop_all(engine):
     """Delete all tables.
     
     Needs a connection to already be established with :func:`connect`.
     """
-    meta.Base.metadata.drop_all()
+    meta.Base.metadata.drop_all(engine)
 
 
-def create_all():
+def create_all(engine):
     """Create all tables.
     
     Needs a connection to already be established with :func:`connect`.
     """
-    meta.Base.metadata.create_all(meta.engine, checkfirst=True)
+    meta.Base.metadata.create_all(engine, checkfirst=True)
 
 
 def _build_url(host, port, name, user, password):

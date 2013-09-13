@@ -6,7 +6,6 @@ Handles catalog ingest.
 
 from sqlalchemy.orm.exc import NoResultFound
 
-from .database.meta import Session
 from .database.models import Catalog, CatalogStar, Observation, Bandpass
 
 
@@ -15,9 +14,10 @@ class IngestBase(object):
     
     This class is meant to be inherited by the user's application.
     """
-    def __init__(self):
+    def __init__(self, Session):
         super(IngestBase, self).__init__()
         self.session = Session()
+        print "in IngestBase.__init__", Session
 
     def set_catalog_metadata(self, catalogname, telescope, catalogpath,
             fitspath, band_defs):
