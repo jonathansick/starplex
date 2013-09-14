@@ -17,7 +17,6 @@ class IngestBase(object):
     def __init__(self, Session):
         super(IngestBase, self).__init__()
         self.session = Session()
-        print "in IngestBase.__init__", Session
 
     def set_catalog_metadata(self, catalogname, telescope, catalogpath,
             fitspath, band_defs):
@@ -49,22 +48,25 @@ class IngestBase(object):
         """
         self.bands = [bdef.get_record(self.session) for bdef in band_defs]
 
-    def ingest(self, obs):
+    def ingest(self, data):
         """Insert a record array of observations, creating catalog and
         catalog star entries with each observation."""
-        nstars, nbands = obs['mag'].shape
+        nstars, nbands = data['mag'].shape
         catalog = Catalog(self.catalogname, self.catalogpath,
                 self.fitspath, self.telescope)
         for i in xrange(nstars):
-            cstar = CatalogStar(obs['x'][i], obs['y'][i],
-                    obs['ra'][i], obs['dec'][i], obs['cfrac'])
+            cstar = CatalogStar(float(data['x'][i]),
+                    float(data['y'][i]),
+                    float(data['ra'][i]),
+                    float(data['dec'][i]),
+                    float(data['cfrac'][i]))
             for j, bp in zip(xrange(nbands), self.bands):
                 if nbands == 0:
-                    mag = obs['mag'][i]
-                    mag_err = obs['mag_err'][i]
+                    mag = float(data['mag'][i])
+                    mag_err = float(data['mag_err'][i])
                 else:
-                    mag = obs['mag'][i, j]
-                    mag_err = obs['mag_err'][i, j]
+                    mag = float(data['mag'][i, j])
+                    mag_err = float(data['mag_err'][i, j])
                 obs = Observation(mag, mag_err)
                 obs.bandpass_id = bp.id
                 cstar.observations.append(obs)

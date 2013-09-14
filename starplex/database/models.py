@@ -37,11 +37,13 @@ class SEDDatum(Base):
 
     # Many to one on bandpass
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
-    bandpass = relationship("Bandpass")  # no need to backref
+    bandpass = relationship("Bandpass",  # no need to backref
+            foreign_keys="[SEDDatum.bandpass_id]")
 
     # Many to one on star
     star_id = Column(Integer, ForeignKey('star.id'))
     star = relationship("Star",
+            foreign_keys="[SEDDatum.star_id]",
             backref=backref("sed", order_by=id))
 
     # TODO need a many-to-many between reduced observation and observation?
@@ -64,10 +66,12 @@ class Observation(Base):
 
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
     bandpass = relationship("Bandpass",
+            foreign_keys="[Observation.bandpass_id]",
             backref=backref('observations', order_by=id))
 
-    catalogstar_id = Column(Integer, ForeignKey('bandpass.id'))
+    catalogstar_id = Column(Integer, ForeignKey('catalogstar.id'))
     catalogstar = relationship("CatalogStar",
+            foreign_keys="[Observation.catalogstar_id]",
             backref=backref('observations', order_by=id))
 
     def __init__(self, mag, magerr):
@@ -114,11 +118,13 @@ class CatalogStar(Base):
     # Many to one
     catalog_id = Column(Integer, ForeignKey('catalog.id'))
     catalog = relationship("Catalog",
+            foreign_keys="[CatalogStar.catalog_id]",
             backref=backref('catalog_stars', order_by=id))
 
     # Reference the star we associate to
     star_id = Column(Integer, ForeignKey('star.id'))
     star = relationship("Star",
+            foreign_keys="[CatalogStar.star_id]",
             backref=backref('catalog_stars', order_by=id))
 
     def __init__(self, x, y, ra, dec, cfrac):
@@ -169,11 +175,13 @@ class ZPDelta(Base):
 
     # Many to one against catalogs
     catalog_id = Column(Integer, ForeignKey('catalog.id'))
-    catalog = relationship("Catalog", backref="zpdeltas")
+    catalog = relationship("Catalog", backref="zpdeltas",
+            foreign_keys="[ZPDelta.catalog_id]")
 
     # Many to one against bandpasses
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
-    bandpass = relationship("Bandpass")  # no need to backref
+    bandpass = relationship("Bandpass",  # no need to backref
+            foreign_keys="[ZPDelta.bandpass_id]")
 
     def __init__(self, kind, delta):
         self.kind = kind
