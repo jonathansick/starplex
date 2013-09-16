@@ -47,6 +47,7 @@ class IngestBase(object):
             List of :class:`BandpassDefinition` instances.
         """
         self.bands = [bdef.get_record(self.session) for bdef in band_defs]
+        print "Bands:", self.bands
 
     def ingest(self, data):
         """Insert a record array of observations, creating catalog and
@@ -68,7 +69,7 @@ class IngestBase(object):
                     mag = float(data['mag'][i, j])
                     mag_err = float(data['mag_err'][i, j])
                 obs = Observation(mag, mag_err)
-                obs.bandpass_id = bp.id
+                obs.bandpass = bp
                 cstar.observations.append(obs)
             catalog.catalog_stars.append(cstar)
         self.session.add(catalog)

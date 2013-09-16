@@ -149,7 +149,7 @@ class Bandpass(Base):
         self.name = name
 
     def __repr__(self):
-        return "<Bandpass(%i)>" % self.id
+        return "<Bandpass(%s)>" % self.name
 
 
 class ColorTransform(Base):
