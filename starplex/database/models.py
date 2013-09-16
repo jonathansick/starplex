@@ -27,7 +27,7 @@ from geoalchemy2 import Geography
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-from .tools import point_str
+from .tools import point_str, multipolygon_str
 from .meta import Base
 
 
@@ -109,15 +109,18 @@ class Catalog(Base):
     catalogpath = Column(String)
     fitspath = Column(String)
     telescope = Column(String)
+    footprint = Column(Geography(geometry_type='MULTIPOLYGON', srid=4326))
 
-    def __init__(self, catalogname, catalogpath, fitspath, telescope):
+    def __init__(self, catalogname, catalogpath, fitspath, telescope,
+            footprints):
         self.catalogname = catalogname
         self.catalogpath = catalogpath
         self.fitspath = fitspath
-        self.telescope
+        self.telescope = telescope
+        self.footprint = multipolygon_str(*footprints)
 
     def __repr__(self):
-        return "<Observation(%i)>" % self.id
+        return "<Catalog(%i)>" % self.id
 
 
 class CatalogStar(Base):

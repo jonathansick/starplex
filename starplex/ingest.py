@@ -5,6 +5,7 @@ Handles catalog ingest.
 """
 
 from sqlalchemy.orm.exc import NoResultFound
+from astropy.wcs import WCS
 
 from .database.models import Catalog, CatalogStar, Observation, Bandpass
 
@@ -30,8 +31,9 @@ class IngestBase(object):
         self.catalogpath = catalogpath
         self.fitspath = fitspath
         self._set_band_list(band_defs)
-        self.catalog = Catalog(catalogname, telescope, catalogpath,
-                fitspath)
+        self.footprints = self.extract_footprint_polygons()
+        self.catalog = Catalog(catalogname, catalogpath, fitspath, telescope,
+                self.footprints)
 
     def _set_band_list(self, band_defs):
         """Define the sequence of bandpasses, corresponding to the order of
@@ -48,12 +50,28 @@ class IngestBase(object):
         """
         self.bands = [bdef.get_record(self.session) for bdef in band_defs]
 
+    def extract_footprint_polygons(self):
+        """Must be overridden by the user to yield a list of footprint
+        polygons for all extensions in the FITS image.
+        
+        Once a ``astropy.io.fits`` header is extracted, the user may pass it
+        to the :meth:`make_footprint_polygon` method to get a footprint
+        polygon.
+        """
+        pass
+
+    def make_polygon(self, header):
+        """Get footprint polygons, with (RA,Dec) vertices, from the given
+        extensions in the in the reference FITS file.
+        """
+        wcs = WCS(header)
+        fp = wcs.calcFootprint().tolist()
+        return fp
+
     def ingest(self, data):
         """Insert a record array of observations, creating catalog and
         catalog star entries with each observation."""
         nstars, nbands = data['mag'].shape
-        catalog = Catalog(self.catalogname, self.catalogpath,
-                self.fitspath, self.telescope)
         for i in xrange(nstars):
             cstar = CatalogStar(float(data['x'][i]),
                     float(data['y'][i]),
@@ -70,8 +88,8 @@ class IngestBase(object):
                 obs = Observation(mag, mag_err)
                 obs.bandpass = bp
                 cstar.observations.append(obs)
-            catalog.catalog_stars.append(cstar)
-        self.session.add(catalog)
+            self.catalog.catalog_stars.append(cstar)
+        self.session.add(self.catalog)
         self.session.commit()
 
 
