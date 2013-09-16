@@ -47,7 +47,6 @@ class IngestBase(object):
             List of :class:`BandpassDefinition` instances.
         """
         self.bands = [bdef.get_record(self.session) for bdef in band_defs]
-        print "Bands:", self.bands
 
     def ingest(self, data):
         """Insert a record array of observations, creating catalog and

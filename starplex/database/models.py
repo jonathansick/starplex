@@ -2,12 +2,32 @@
 # encoding: utf-8
 """
 Table models for SQLAlchemy ORM
+
+Comment about PostGIS Geography data types.
+-------------------------------------------
+
+I'm encoding RA/Dec as PostGIS
+geography data types. This allow distances to be computed using spherical
+geometry, however, the Geography data type can only use the 4326 SRID.
+This is the standard WK 84 definition for representing the Earth. However,
+this is not ideal for astronomy since the celestial sphere is truly a sphere!
+
+The alternative is switching to the 2D geometry projection, perhaps with
+SRID 4047. However, I can't get PostGIS/GeoAlchemy to let me insert points
+with this SRID.
+
+Two resources for using PostGIS in astronomy are:
+
+- http://jsick.net/14bF4ZQ
+- http://skyview.gsfc.nasa.gov/xaminblog/index.php/tag/postgis/
 """
 
 from sqlalchemy import Column, Integer, String, Float
+from geoalchemy2 import Geography
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
+from .tools import point_str
 from .meta import Base
 
 
@@ -16,15 +36,13 @@ class Star(Base):
     __tablename__ = 'star'
 
     id = Column(Integer, primary_key=True)
-    ra = Column(Float)
-    dec = Column(Float)
+    coord = Column(Geography(geometry_type='POINT', srid=4326))
 
     def __init__(self, ra, dec):
-        self.ra = ra
-        self.dec = dec
+        self.coord = point_str(ra, dec)
 
     def __repr__(self):
-        return "<Star(%i, %.8f, %.8f)>" % (self.id, self.ra, self.dec)
+        return "<Star(%i)>" % (self.id)
 
 
 class SEDDatum(Base):
@@ -111,8 +129,7 @@ class CatalogStar(Base):
     id = Column(Integer, primary_key=True)
     x = Column(Float)
     y = Column(Float)
-    ra = Column(Float)
-    dec = Column(Float)
+    coord = Column(Geography(geometry_type='POINT', srid=4326))
     cfrac = Column(Float)
 
     # Many to one
@@ -130,8 +147,9 @@ class CatalogStar(Base):
     def __init__(self, x, y, ra, dec, cfrac):
         self.x = x
         self.y = y
-        self.ra = ra
-        self.dec = dec
+        assert ra >= 0. and ra <= 360.
+        assert dec >= -90. and dec <= 90.
+        self.coord = point_str(ra, dec)
         self.cfrac = cfrac
 
     def __repr__(self):
