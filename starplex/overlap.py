@@ -7,6 +7,7 @@ Module for finding footprint overlaps.
 from sqlalchemy import func
 
 from .database.models import Catalog
+from .database.tools import sq_meter_to_sq_degree
 
 
 class CatalogOverlaps(object):
@@ -29,6 +30,7 @@ class CatalogOverlaps(object):
         self.telescope = telescope
         self._overlapping_catalogs = self._query_from_catalog(self.main_catalog)
         self._clips = None  # overlapping polygons, will be list
+        self._areas = None  # areas of overlaps
     
     def _query_from_catalog(self, main_catalog):
         """Query for overlapping catalogs given a principle catalog.
@@ -79,6 +81,29 @@ class CatalogOverlaps(object):
                         .one()
                 self._clips.append(clip)
         return self._clips
+
+    @property
+    def areas(self):
+        """Returns area of each overlap, as a list. Areas are given in
+        square degrees.
+        """
+        if self._areas is None:
+            self._areas = []
+            for clip in self.clips:
+                A = 0.
+                for part in clip:
+                    A += self._s.scalar(part.ST_Area(use_spheroid=False))
+                # A is in square meters, given a Geography type
+                # covert to square degrees
+                self._areas.append(sq_meter_to_sq_degree(A))
+        return self._areas
+
+    @property
+    def largest_overlapping_catalog(self):
+        """Convenience accessor for Catalog entry with the largest overlap."""
+        max_area = max(self.areas)
+        max_index = self.areas.index(max_area)
+        return self.catalogs[max_index]
 
 
 def main():

@@ -29,6 +29,8 @@ def main():
         print type(clip)
         print type(clip[0])
         print session.query(func.ST_AsText(clip[0])).one()
+    print overlaps.areas
+    print overlaps.largest_overlapping_catalog
 
 
 if __name__ == '__main__':

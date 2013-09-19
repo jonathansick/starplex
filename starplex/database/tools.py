@@ -4,6 +4,19 @@
 Utilities for working with Postgres/PostGIS.
 """
 
+import math
+
+
+R_EARTH = 6371008.7714  # assumed earth radius, meters
+
+
+def sq_meter_to_sq_degree(A):
+    """Convert area in square meters (for Geography type) to square
+    degrees.
+    """
+    f = 180. / math.pi / R_EARTH
+    return A * f * f
+
 
 def point_str(ra, dec):
     """Convert an (RA,Dec) point into a PostGIS POINT definition (a ``str``).
