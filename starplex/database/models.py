@@ -38,8 +38,8 @@ class Star(Base):
     id = Column(Integer, primary_key=True)
     coord = Column(Geography(geometry_type='POINT', srid=4326))
 
-    def __init__(self, ra, dec):
-        self.coord = point_str(ra, dec)
+    def __init__(self, coord):
+        self.coord = coord
 
     def __repr__(self):
         return "<Star(%i)>" % (self.id)
