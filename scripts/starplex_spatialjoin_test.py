@@ -10,6 +10,7 @@ from sqlalchemy import func
 from starplex.database.connection import connect
 from starplex.database.models import Catalog
 from starplex.overlap import CatalogOverlaps
+from starplex.compile import spatialjoin
 
 
 def main():
@@ -31,6 +32,14 @@ def main():
         print session.query(func.ST_AsText(clip[0])).one()
     print overlaps.areas
     print overlaps.largest_overlapping_catalog
+
+    joiner = spatialjoin.SpatialJoiner(session)
+    joiner.seed_catalog(main_catalog)
+    joiner.accrete_catalogs(1.)
+    session.commit()
+
+    # TODO test compilation then do a rollback.
+
 
 
 if __name__ == '__main__':
