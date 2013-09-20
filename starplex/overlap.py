@@ -22,7 +22,7 @@ class CatalogOverlaps(object):
     telescope : str
         Value of ``telescope`` field in ``catalog`` table rows to query.
     """
-    def __init__(self, session, catalog, telescope):
+    def __init__(self, session, catalog, telescope=None):
         super(CatalogOverlaps, self).__init__()
         self._s = session
         self.main_catalog = catalog
@@ -36,12 +36,13 @@ class CatalogOverlaps(object):
         """Query for overlapping catalogs given a principle catalog.
         Returns a list of overlapping catalogs.
         """
-        overlaps = self._s.query(Catalog)\
+        q = self._s.query(Catalog)\
             .filter(func.ST_Intersects(
                 Catalog.footprint, self._main_footprint))\
-            .filter(Catalog.id != main_catalog.id)\
-            .filter(Catalog.telescope == self.telescope)\
-            .all()
+            .filter(Catalog.id != main_catalog.id)
+        if self.telescope is not None:
+            q = q.filter(Catalog.telescope == self.telescope)
+        overlaps = q.all()
         return overlaps
 
     @property
