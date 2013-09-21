@@ -11,6 +11,8 @@ from starplex.database.connection import connect
 from starplex.database.models import Catalog
 from starplex.overlap import CatalogOverlaps
 from starplex.compile import spatialjoin
+from starplex.compile.compiledproperties import compiled_catalogs
+from starplex.compile.compiledproperties import compiled_footprint
 
 
 def main():
@@ -33,10 +35,13 @@ def main():
     print overlaps.areas
     print overlaps.largest_overlapping_catalog
 
-    joiner = spatialjoin.SpatialJoiner(session)
-    joiner.seed_catalog(main_catalog)
-    joiner.accrete_catalogs(1.)
-    session.commit()
+    print compiled_catalogs(session)
+    print compiled_footprint(session, session.query(Catalog).all())
+
+    # joiner = spatialjoin.SpatialJoiner(session)
+    # joiner.seed_catalog(main_catalog)
+    # joiner.accrete_catalogs(1.)
+    # session.commit()
 
     # TODO test compilation then do a rollback.
 
