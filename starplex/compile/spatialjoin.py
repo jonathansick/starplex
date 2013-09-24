@@ -4,6 +4,8 @@
 Compile the star catalog using basic PostGIS spatial joins.
 """
 
+from ..overlap import FootprintOverlaps
+from .compiledproperties import compiled_footprint, compiled_catalogs
 from . import seed
 
 
@@ -31,7 +33,17 @@ class SpatialJoiner(object):
         telescope : str
             Constraint on the ``telescope`` field of catalogs to add.
         """
-        pass
+        while True:
+            catalogs = compiled_catalogs(self._s)
+            footprint = compiled_footprint(self._s, catalogs)
+            overlaps = FootprintOverlaps(self._s, footprint,
+                    exclude=catalogs,
+                    telescope=telescope)
+            # TODO use ``query`` to customize the query
+            if overlaps.count == 0:
+                break
+            next_catalog = overlaps.largest_overlapping_catalog()
+
 
 
 def main():
