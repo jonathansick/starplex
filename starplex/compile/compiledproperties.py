@@ -6,6 +6,7 @@ been compiled, what the aggregate footprint is, etc..
 """
 
 from sqlalchemy import func
+from geoalchemy2 import Geography
 
 from ..database.models import CatalogStar, Catalog
 
@@ -30,9 +31,10 @@ def compiled_footprint(session, catalogs):
         # TODO I'm uneasy about whether I need to explicitly cast to
         # geometry in order to perform a union.
         # e.g. using func.ST_Transform(agg_footprint)
-        agg_footprint = session.query(
+        agg_footprint = Geography(session.query(
                 func.ST_Union(agg_footprint, catalog.footprint)
-            ).one()
+            ).one()[0])
+    print "agg_footprint", agg_footprint
     return agg_footprint
 
 

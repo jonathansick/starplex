@@ -101,7 +101,7 @@ class FootprintOverlaps(OverlapBase):
         self._footprint = footprint
         self.telescope = telescope
         self._excluded_catalogs = exclude
-        self._overlapping_catalogs = self._query_from_catalog()
+        self._overlapping_catalogs = self._query_from_footprint()
 
     def _query_from_footprint(self):
         """Query for overlapping catalogs given a footprint, and possibly

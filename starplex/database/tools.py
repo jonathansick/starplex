@@ -18,6 +18,11 @@ def sq_meter_to_sq_degree(A):
     return A * f * f
 
 
+def degree_to_meter(d):
+    """Convert degrees on the sky to effective meters (for geography type)."""
+    return d * math.pi * R_EARTH / 180.
+
+
 def point_str(ra, dec):
     """Convert an (RA,Dec) point into a PostGIS POINT definition (a ``str``).
     

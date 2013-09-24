@@ -8,7 +8,7 @@ Requires the WIRCam data to be ingested (not included yet, sorry).
 from sqlalchemy import func
 
 from starplex.database.connection import connect
-from starplex.database.models import Catalog
+from starplex.database.models import Catalog, Bandpass
 from starplex.overlap import CatalogOverlaps
 from starplex.compile import spatialjoin
 from starplex.compile.compiledproperties import compiled_catalogs
@@ -38,10 +38,14 @@ def main():
     print compiled_catalogs(session)
     print compiled_footprint(session, session.query(Catalog).all())
 
-    # joiner = spatialjoin.SpatialJoiner(session)
+    bandpass = session.query(Bandpass).\
+            filter(Bandpass.name == "Ks").\
+            one()
+
+    joiner = spatialjoin.SpatialJoiner(session)
     # joiner.seed_catalog(main_catalog)
-    # joiner.accrete_catalogs(1.)
-    # session.commit()
+    joiner.accrete_catalogs(1., bandpass)
+    session.commit()
 
     # TODO test compilation then do a rollback.
 
