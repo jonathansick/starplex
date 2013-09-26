@@ -11,8 +11,8 @@ from starplex.database.connection import connect
 from starplex.database.models import Catalog, Bandpass
 from starplex.overlap import CatalogOverlaps
 from starplex.compile import spatialjoin
-from starplex.compile.compiledproperties import compiled_catalogs
-from starplex.compile.compiledproperties import compiled_footprint
+from starplex.compile.aggprops import compiled_catalogs
+from starplex.compile.aggprops import compiled_footprint
 
 
 def main():

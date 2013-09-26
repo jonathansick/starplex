@@ -7,7 +7,7 @@ Compile the star catalog using basic PostGIS spatial joins.
 from ..database.models import Catalog, CatalogStar, Observation, Star
 from ..overlap import FootprintOverlaps
 from ..database.tools import degree_to_meter
-from .compiledproperties import compiled_footprint, compiled_catalogs
+from .aggprops import compiled_footprint, compiled_catalogs
 from . import seed
 
 
