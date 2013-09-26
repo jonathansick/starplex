@@ -23,18 +23,13 @@ def compiled_catalogs(session):
 
 def compiled_footprint(session, catalogs):
     """Returns a Geoalchemy2 footprint polygon from the compiled footprint."""
-    print catalogs
-    agg_footprint = catalogs[0].footprint  # seed the aggregate footprint
     if len(catalogs) == 1:
-        return agg_footprint
-    for catalog in catalogs[1:]:
-        # TODO I'm uneasy about whether I need to explicitly cast to
-        # geometry in order to perform a union.
-        # e.g. using func.ST_Transform(agg_footprint)
-        agg_footprint = Geography(session.query(
-                func.ST_Union(agg_footprint, catalog.footprint)
-            ).one()[0])
-    print "agg_footprint", agg_footprint
+        agg_footprint = catalogs[0].footprint
+    else:
+        agg_footprint = session.query(
+                func.ST_Union(
+                    *[catalog.footprint for catalog in catalogs])).\
+                one()[0]
     return agg_footprint
 
 
