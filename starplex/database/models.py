@@ -117,7 +117,10 @@ class Catalog(Base):
         self.catalogpath = catalogpath
         self.fitspath = fitspath
         self.telescope = telescope
-        self.footprint = multipolygon_str(*footprints)
+        if footprints is not None:
+            self.footprint = multipolygon_str(*footprints)
+        else:
+            self.footprint = None
 
     def __repr__(self):
         return "<Catalog(%i)>" % self.id
