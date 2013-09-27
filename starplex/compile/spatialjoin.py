@@ -21,7 +21,8 @@ class SpatialJoiner(object):
         """Initialize the star catalog using a seed observational catalog."""
         seed.seed_star_table(self._s, catalog, reset=reset)
 
-    def accrete_catalogs(self, r_tol, bandpass, query=None, telescope=None):
+    def accrete_catalogs(self, r_tol, bandpass, query=None, telescope=None,
+            no_new=False):
         """Accrete observational catalogs onto the star catalog given
         the query constraints on the catalogs to add.
 
@@ -38,8 +39,12 @@ class SpatialJoiner(object):
             provided, a query will be built using other constraints.
         telescope : str
             Constraint on the ``telescope`` field of catalogs to add.
+        no_new : bool
+            If ``True`` then stars from this catalog will be matched to stars
+            in the ``Star`` table, but unmatched stars will not create new
+            entries. This option can be useful for matching observed star
+            catalogs to a reference catalog. Default is ``False``.
         """
-        r_tol_m = degree_to_meter(r_tol / 3600.)
         while True:
             catalogs = compiled_catalogs(self._s)
             footprint = compiled_footprint(self._s, catalogs)
@@ -53,10 +58,29 @@ class SpatialJoiner(object):
                 break
             next_catalog = overlaps.largest_overlapping_catalog
             print "Ingesting:", next_catalog
-            self._ingest_catalog(next_catalog, r_tol_m, bandpass)
+            self.join_catalog(next_catalog, r_tol, bandpass,
+                    no_new=no_new)
 
-    def _ingest_catalog(self, catalog, r_tol_m, bandpass):
-        """Join an observational catalog to the Star table"""
+    def join_catalog(self, catalog, r_tol, bandpass, no_new=False):
+        """Join a specific observational catalog to the Star table.
+        
+        Parameters
+        ----------
+        catalog : 
+            The :class:`starplex.database.models.Catalog` to join to the
+            `Star` table.
+        r_tol : float
+            Join search radius in arcseconds.
+        bandpass : float
+            The :class:`starplex.database.models.Bandpass` to use to sort
+            the stars being added by brightness.
+        no_new : bool
+            If ``True`` then stars from this catalog will be matched to stars
+            in the ``Star`` table, but unmatched stars will not create new
+            entries. This option can be useful for matching observed star
+            catalogs to a reference catalog. Default is ``False``.
+        """
+        r_tol_m = degree_to_meter(r_tol / 3600.)
         matched_count = 0
         new_count = 0
         # Query catalog stars for this catalog, ordering brightnest to
@@ -107,7 +131,7 @@ class SpatialJoiner(object):
                         matched_count += 1
                         _ingested = True
                         break
-            if _ingested == False:
+            if _ingested == False and not no_new:
                 # No match; add this star directly
                 self._add_new_star(cstar)
                 new_count += 1
