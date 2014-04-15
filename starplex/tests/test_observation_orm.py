@@ -6,7 +6,7 @@ Test working with observation catalogs in the ORM.
 
 import numpy as np
 
-from starplex.database import connect, create_all, Session
+from starplex.database import engine, connect, create_all, drop_all, Session
 from starplex.database import Bandpass, Catalog, CatalogStar, Observation
 
 
@@ -34,8 +34,11 @@ class TestObservationsORM(object):
             [10.0, 10.5], [40.0, 41.])
 
     def setup_class(self):
+        print "engine init", engine
         connect(user='jsick', name='starplex_test')
+        print "engine after connect", engine
         self.session = Session()
+        drop_all()
         create_all()
 
         catalog = Catalog(self.mock_dataset.catalog_name,
