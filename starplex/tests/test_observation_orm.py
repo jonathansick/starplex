@@ -42,20 +42,14 @@ class TestObservationsORM(object):
                 self.mock_dataset.catalog_name,
                 self.mock_dataset.instrument_name,
                 None)
-        bps = {}
-        for bandname in self.mock_dataset.bands:
-            print bandname
-            print self.mock_dataset.band_sys
-            bp = Bandpass(bandname, self.mock_dataset.band_sys)
-            print bp
-            self.session.add(bp)
-            bps[bandname] = bp
         for i in xrange(self.mock_dataset.n):
             cstar = CatalogStar(0., 0., self.mock_dataset.ra[i],
                     self.mock_dataset.dec[i], 1.)
             for j, bandname in enumerate(self.mock_dataset.bands):
+                bp = Bandpass.as_unique(self.session, bandname,
+                        self.mock_dataset.band_sys)
                 obs = Observation(self.mock_dataset.mags[j][i], 0.)
-                obs.bandpass = bps[bandname]
+                obs.bandpass = bp
                 cstar.observations.append(obs)
             catalog.catalog_stars.append(cstar)
         self.session.add(catalog)

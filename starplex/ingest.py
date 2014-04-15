@@ -4,7 +4,6 @@
 Handles catalog ingest.
 """
 
-from sqlalchemy.orm.exc import NoResultFound
 from astropy.wcs import WCS
 
 from .database import Catalog, CatalogStar, Observation, Bandpass
@@ -20,35 +19,18 @@ class IngestBase(object):
         self.session = Session()
 
     def set_catalog_metadata(self, catalogname, telescope, catalogpath,
-            fitspath, band_defs):
+            fitspath, band_names, band_system):
         """Define the metadata for the observational catalog being inserted.
-        
-        Automatically calls :meth:`_set_band_list` to insert bandpass
-        definitions in the database.
         """
         self.catalogname = catalogname
         self.telescope = telescope
         self.catalogpath = catalogpath
         self.fitspath = fitspath
-        self._set_band_list(band_defs)
+        self.band_system = band_system
+        self.band_names = list(band_names)
         self.footprints = self.extract_footprint_polygons()
         self.catalog = Catalog(catalogname, catalogpath, fitspath, telescope,
                 self.footprints)
-
-    def _set_band_list(self, band_defs):
-        """Define the sequence of bandpasses, corresponding to the order of
-        magnitude measurements in the observed catalog.
-
-        This method will search the database for existing bandpass records,
-        and if matching bandpasses do not exist, add these bandpasses to the
-        ``bandpass`` table.
-
-        Parameters
-        ----------
-        band_defs : list
-            List of :class:`BandpassDefinition` instances.
-        """
-        self.bands = [bdef.get_record(self.session) for bdef in band_defs]
 
     def extract_footprint_polygons(self):
         """Must be overridden by the user to yield a list of footprint
@@ -78,7 +60,9 @@ class IngestBase(object):
                     float(data['ra'][i]),
                     float(data['dec'][i]),
                     float(data['cfrac'][i]))
-            for j, bp in zip(xrange(nbands), self.bands):
+            for j, bandname in zip(xrange(nbands), self.band_names):
+                bp = Bandpass.as_unique(self.session,
+                        bandname, self.band_system)
                 if nbands == 0:
                     mag = float(data['mag'][i])
                     mag_err = float(data['mag_err'][i])
@@ -91,38 +75,3 @@ class IngestBase(object):
             self.catalog.catalog_stars.append(cstar)
         self.session.add(self.catalog)
         self.session.commit()
-
-
-class BandpassDefinition(object):
-    """Handles insertion of bandpass records into the database.
-    
-    Parameters
-    ----------
-    name : str
-        Name of this bandpass.
-    """
-    def __init__(self, name):
-        super(BandpassDefinition, self).__init__()
-        self.name = name
-
-    def get_record(self, session):
-        """Returns an existing database record for this bandpass, or inserts
-        a new one.
-
-        Parameters
-        ----------
-        session : :class:`Session`
-            Instance of the :class:`Session`.
-        """
-        try: 
-            bp = session.query(Bandpass).\
-                    filter(Bandpass.name == self.name).one()
-        except NoResultFound:
-            bp = self._insert_bandpass(session)
-        return bp
-
-    def _insert_bandpass(self, session):
-        """Insert this bandpass into the database."""
-        bp = Bandpass(self.name)
-        session.add(bp)
-        return bp
