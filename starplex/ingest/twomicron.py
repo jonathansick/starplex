@@ -10,6 +10,7 @@ import gzip
 
 from sqlalchemy.orm.exc import NoResultFound
 import numpy as np
+
 from ..database import Catalog, CatalogStar, Observation, Bandpass
 
 
