@@ -17,6 +17,7 @@ class MockCatalog(object):
         super(MockCatalog, self).__init__()
         self.catalog_name = catalog_name
         self.instrument_name = instrument_name
+        self.fits_path = "test.fits"
         self.ra = np.random.uniform(low=min(ra_range),
                 high=max(ra_range), size=n)
         self.dec = np.random.uniform(low=min(dec_range),
@@ -38,10 +39,9 @@ class TestObservationsORM(object):
         create_all()
 
         catalog = Catalog(self.mock_dataset.catalog_name,
-                self.mock_dataset.catalog_name,
-                self.mock_dataset.catalog_name,
                 self.mock_dataset.instrument_name,
-                None)
+                None,
+                fits_path=self.mock_dataset.fits_path)
         for i in xrange(self.mock_dataset.n):
             cstar = CatalogStar(0., 0., self.mock_dataset.ra[i],
                     self.mock_dataset.dec[i], 1.)
@@ -65,3 +65,8 @@ class TestObservationsORM(object):
         print bp.name, bp.system
         assert bp.name == self.mock_dataset.bands[0]
         assert bp.system == self.mock_dataset.band_sys
+
+    def test_hstore_metadata_read(self):
+        c = self.session.query(Catalog).\
+                filter(Catalog.name == self.mock_dataset.catalog_name).one()
+        assert c.meta['fits_path'] == self.mock_dataset.fits_path

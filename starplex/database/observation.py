@@ -26,6 +26,8 @@ from sqlalchemy import Column, Integer, String, Float
 from geoalchemy2 import Geography
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.dialects.postgresql import HSTORE
+from sqlalchemy.ext.mutable import MutableDict
 
 from .meta import Base, point_str, multipolygon_str
 
@@ -35,22 +37,24 @@ class Catalog(Base):
     __tablename__ = 'catalog'
 
     id = Column(Integer, primary_key=True)
-    catalogname = Column(String)
-    catalogpath = Column(String)
-    fitspath = Column(String)
-    telescope = Column(String)
+    name = Column(String)
+    # catalogpath = Column(String)
+    # fitspath = Column(String)
+    instrument = Column(String)
     footprint = Column(Geography(geometry_type='MULTIPOLYGON', srid=4326))
+    meta = Column(MutableDict.as_mutable(HSTORE),
+            nullable=False,
+            default={},
+            index=True)
 
-    def __init__(self, catalogname, catalogpath, fitspath, telescope,
-            footprints):
-        self.catalogname = catalogname
-        self.catalogpath = catalogpath
-        self.fitspath = fitspath
-        self.telescope = telescope
+    def __init__(self, name, instrument, footprints=None, **metadata):
+        self.name = name
+        self.instrument = instrument
         if footprints is not None:
             self.footprint = multipolygon_str(*footprints)
         else:
             self.footprint = None
+        self.meta = dict(metadata)
 
     def __repr__(self):
         return "<Catalog(%i)>" % self.id
