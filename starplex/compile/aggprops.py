@@ -6,9 +6,9 @@ been compiled, what the aggregate footprint is, etc..
 """
 
 from sqlalchemy import func
-from geoalchemy2 import Geography
+# from geoalchemy2 import Geography
 
-from ..database.models import CatalogStar, Catalog
+from ..database import CatalogStar, Catalog
 
 
 def compiled_catalogs(session):

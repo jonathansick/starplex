@@ -7,8 +7,8 @@ Module for finding footprint overlaps.
 from sqlalchemy import func
 from sqlalchemy import not_
 
-from .database.models import Catalog
-from .database.tools import sq_meter_to_sq_degree
+from .database import Catalog
+from .database.meta.gistools import sq_meter_to_sq_degree
 
 
 class OverlapBase(object):

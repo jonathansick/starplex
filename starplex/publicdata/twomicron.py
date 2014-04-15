@@ -10,7 +10,7 @@ import gzip
 
 from sqlalchemy.orm.exc import NoResultFound
 import numpy as np
-from ..database.models import Catalog, CatalogStar, Observation, Bandpass
+from ..database import Catalog, CatalogStar, Observation, Bandpass
 
 
 PSC_FORMAT = [('ra', float), ('dec', float),

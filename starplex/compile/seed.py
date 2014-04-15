@@ -4,7 +4,7 @@
 Tools for seeding the star table with an initial observational catalog.
 """
 
-from ..database.models import Star, CatalogStar
+from ..database import Star, CatalogStar
 
 
 def seed_star_table(session, obs_catalog, reset=False):

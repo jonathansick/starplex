@@ -7,7 +7,7 @@ Handles catalog ingest.
 from sqlalchemy.orm.exc import NoResultFound
 from astropy.wcs import WCS
 
-from .database.models import Catalog, CatalogStar, Observation, Bandpass
+from .database import Catalog, CatalogStar, Observation, Bandpass
 
 
 class IngestBase(object):

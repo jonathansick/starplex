@@ -4,9 +4,9 @@
 Compile the star catalog using basic PostGIS spatial joins.
 """
 
-from ..database.models import Catalog, CatalogStar, Observation, Star
+from ..database import Catalog, CatalogStar, Observation, Star
 from ..overlap import FootprintOverlaps
-from ..database.tools import degree_to_meter
+from ..database.meta.gistools import degree_to_meter
 from .aggprops import compiled_footprint, compiled_catalogs
 from . import seed
 
