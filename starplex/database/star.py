@@ -27,8 +27,7 @@ from geoalchemy2 import Geography
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-# from .meta import point_str, multipolygon_str
-from .meta import Base
+from .meta import Base, point_str
 
 
 class Star(Base):
@@ -36,10 +35,18 @@ class Star(Base):
     __tablename__ = 'star'
 
     id = Column(Integer, primary_key=True)
+    ra = Column(Float)
+    ra_err = Column(Float)
+    dec = Column(Float)
+    dec_err = Column(Float)
     coord = Column(Geography(geometry_type='POINT', srid=4326))
 
-    def __init__(self, coord):
-        self.coord = coord
+    def __init__(self, ra, dec, ra_err, dec_err):
+        self.ra = ra
+        self.dec = dec
+        self.ra_err = ra_err
+        self.dec_err = dec_err
+        self.coord = point_str(ra_err, dec_err)
 
     def __repr__(self):
         return "<Star(%i)>" % (self.id)
@@ -53,7 +60,7 @@ class Magnitude(Base):
 
     id = Column(Integer, primary_key=True)
     mag = Column(Float)
-    magerr = Column(Float)
+    mag_err = Column(Float)
 
     # Many to one on bandpass
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
@@ -66,8 +73,11 @@ class Magnitude(Base):
             foreign_keys="[Magnitude.star_id]",
             backref=backref("magnitudes", order_by=id))
 
-    def __init__(self):
-        pass
+    def __init__(self, mag, mag_err, bandpass, star):
+        self.mag = mag
+        self.mag_err = mag_err
+        self.bandpass = bandpass
+        self.star = star
 
     def __repr__(self):
         return "<Magnitude(%i)>" % self.id

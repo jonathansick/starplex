@@ -69,6 +69,10 @@ class CatalogStar(Base):
     id = Column(Integer, primary_key=True)
     x = Column(Float)
     y = Column(Float)
+    ra = Column(Float)
+    dec = Column(Float)
+    ra_err = Column(Float)
+    dec_err = Column(Float)
     coord = Column(Geography(geometry_type='POINT', srid=4326))
     cfrac = Column(Float)
 
@@ -84,12 +88,16 @@ class CatalogStar(Base):
             foreign_keys="[CatalogStar.star_id]",
             backref=backref('catalog_stars', order_by=id))
 
-    def __init__(self, x, y, ra, dec, cfrac):
+    def __init__(self, x, y, ra, dec, ra_err, dec_err, cfrac):
         self.x = x
         self.y = y
         assert ra >= 0. and ra <= 360.
         assert dec >= -90. and dec <= 90.
         self.coord = point_str(ra, dec)
+        self.ra = ra
+        self.dec = dec
+        self.ra_err = ra_err
+        self.dec_err = dec_err
         self.cfrac = cfrac
 
     def __repr__(self):
@@ -102,7 +110,7 @@ class Observation(Base):
 
     id = Column(Integer, primary_key=True)
     mag = Column(Float)
-    magerr = Column(Float)
+    mag_err = Column(Float)
 
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
     bandpass = relationship("Bandpass",
@@ -114,9 +122,9 @@ class Observation(Base):
             foreign_keys="[Observation.catalogstar_id]",
             backref=backref('observations', order_by=id))
 
-    def __init__(self, mag, magerr):
+    def __init__(self, mag, mag_err):
         self.mag = mag
-        self.magerr = magerr
+        self.mag_err = mag_err
 
     def __repr__(self):
         return "<Observation(%i)>" % self.id

@@ -44,7 +44,7 @@ class TestObservationsORM(object):
                 fits_path=self.mock_dataset.fits_path)
         for i in xrange(self.mock_dataset.n):
             cstar = CatalogStar(0., 0., self.mock_dataset.ra[i],
-                    self.mock_dataset.dec[i], 1.)
+                    self.mock_dataset.dec[i], 0., 0., 1.)
             for j, bandname in enumerate(self.mock_dataset.bands):
                 bp = Bandpass.as_unique(self.session, bandname,
                         self.mock_dataset.band_sys)
