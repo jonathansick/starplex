@@ -36,6 +36,8 @@ def init_catalog(session, name, instrument, band_names, band_system,
     meta : dict
         Metadata passed to the Catalog's `meta` HSTORE field.
     """
+    if not meta:
+        meta = {}
     # Pre-insert the catalog and bandpass
     catalog = Catalog(name, instrument, footprints=footprint_polys, **meta)
     session.add(catalog)
