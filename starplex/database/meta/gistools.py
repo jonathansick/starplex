@@ -33,7 +33,7 @@ def point_str(ra, dec):
     dec : float
         Declination of point (degrees).
     """
-    return 'POINT(%.10f %.10f)' % (ra, dec)
+    return 'POINT({:.10f} {:.10f})'.format(float(ra), float(dec))
 
 
 def multipolygon_str(*polygons):
@@ -50,16 +50,12 @@ def multipolygon_str(*polygons):
     """
     poly_strs = []
     for polygon in polygons:
-        v_strs = ["%.10f %.10f" % tuple(v) for v in polygon]
+        v_strs = ["{:.10f} {:.10f}".format(*_recast(v)) for v in polygon]
         v_strs.append(v_strs[0])  # auto close the polygon
-        poly_str = "(( %s ))" % ",".join(v_strs)
+        poly_str = "(( {} ))".format(",".join(v_strs))
         poly_strs.append(poly_str)
-    return 'MULTIPOLYGON(%s)' % ",".join(poly_strs)
+    return 'MULTIPOLYGON({})'.format(",".join(poly_strs))
 
 
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
+def _recast(vert):
+    return (float(vert[0]), float(vert[1]))
