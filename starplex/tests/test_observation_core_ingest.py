@@ -8,7 +8,7 @@ import numpy as np
 
 from starplex.database import connect, create_all, drop_all, Session
 from starplex.database import Bandpass, Catalog, CatalogStar, Observation
-from starplex.ingest import ingest_catalog
+from starplex.ingest import init_catalog, add_observations
 
 
 class MockCatalog(object):
@@ -52,14 +52,17 @@ class TestObservationsCoreIngest(object):
         drop_all()
         create_all()
 
-        ingest_catalog(self.session,
+        init_catalog(self.session,
+                self.mock.catalog_name, self.mock.instrument_name,
+                self.mock.bands, self.mock.band_sys,
+                self.mock.footprints,
+                meta=self.mock.meta)
+        add_observations(self.session,
                 self.mock.catalog_name, self.mock.instrument_name,
                 self.mock.bands, self.mock.band_sys, self.mock.x, self.mock.y,
                 self.mock.ra, self.mock.ra_err,
                 self.mock.dec, self.mock.dec_err,
-                self.mock.mag, self.mock.mag_err, self.mock.cfrac,
-                self.mock.footprints,
-                meta=self.mock.meta)
+                self.mock.mag, self.mock.mag_err, self.mock.cfrac)
 
     def teardown_class(self):
         # drop_all()

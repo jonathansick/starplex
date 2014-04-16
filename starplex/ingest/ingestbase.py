@@ -5,6 +5,7 @@ Handles catalog ingest.
 """
 
 from astropy.wcs import WCS
+from astropy import log
 
 from sqlalchemy.sql import func, select
 from sqlalchemy import Integer
@@ -13,14 +14,46 @@ from ..database import Catalog, CatalogStar, Observation, Bandpass
 from ..database.meta import point_str
 
 
-def ingest_catalog(session, name, instrument, band_names, band_system,
-        x, y, ra, ra_err, dec, dec_err, mag, mag_err, cfrac,
+def init_catalog(session, name, instrument, band_names, band_system,
         footprint_polys=None, meta=None):
+    """Insert a new observational catalog. Follow this up with
+    insert_observations.
+
+    Parameters
+    ----------
+    session : ``Session``
+        The session instance.
+    name : str
+        Name of the Catalog.
+    instrument : str
+        Name of the instrument.
+    band_names : list
+        List of bandpass names
+    band_system : str
+        Name of the photometric system.
+    footprint_polys : list
+        List of footprint polyons of the catalogs footprint on the sky.
+    meta : dict
+        Metadata passed to the Catalog's `meta` HSTORE field.
+    """
+    # Pre-insert the catalog and bandpass
+    catalog = Catalog(name, instrument, footprints=footprint_polys, **meta)
+    session.add(catalog)
+    # Ensure the bandpass exists
+    for n in band_names:
+        bp = Bandpass.as_unique(session, n, band_system)
+        session.add(bp)
+    session.commit()
+
+
+def add_observations(session, name, instrument, band_names, band_system,
+        x, y, ra, ra_err, dec, dec_err, mag, mag_err, cfrac):
     """Insert and observational catalog (Catalog, CatalogStar and Observation
     tables) efficiently with SQLAlchemy Core.
 
-    Note that changes to the database *are* committed and cannot be rolled
-    back with ``session.rollback``.
+    :func:`init_catalog` should be called first to ensure the Catalog and
+    Bandpass rows are added. This function can be called several times to
+    append stars in several batches to the catalog.
 
     Parameters
     ----------
@@ -52,10 +85,6 @@ def ingest_catalog(session, name, instrument, band_names, band_system,
         Uncertainties of magnitudes of stars.
     cfrac : ``ndarray``, (n_stars,)
         Completeness fraction of a star in this catalog.
-    footprint_polys : list
-        List of footprint polyons of the catalogs footprint on the sky.
-    meta : dict
-        Metadata passed to the Catalog's `meta` HSTORE field.
     """
     n_bands = len(band_names)
     n_stars = ra.shape[0]
@@ -71,14 +100,6 @@ def ingest_catalog(session, name, instrument, band_names, band_system,
     assert n_stars == y.shape[0]
     assert n_stars == cfrac.shape[0]
 
-    # Pre-insert the catalog and bandpass
-    catalog = Catalog(name, instrument, footprints=footprint_polys, **meta)
-    session.add(catalog)
-    for n in band_names:
-        bp = Bandpass.as_unique(session, n, band_system)
-        session.add(bp)
-    session.commit()
-
     # Pre-fetch catalog ids and band ids
     catalog_id = session.query(Catalog).\
             filter(Catalog.name == name).one().id
@@ -89,7 +110,7 @@ def ingest_catalog(session, name, instrument, band_names, band_system,
 
     # Counter, seeded with next CatalogStar id value
     id_star_0 = _max_id(session, CatalogStar.__table__)
-    id_obs = _max_id(session, CatalogStar.__table__)
+    id_obs = _max_id(session, Observation.__table__)
 
     cstars = []
     obs_list = []
@@ -110,6 +131,7 @@ def ingest_catalog(session, name, instrument, band_names, band_system,
                 "mag": mag[i, j], "mag_err": mag_err[i, j]})
     session.execute(CatalogStar.__table__.insert(), cstars)
     session.execute(Observation.__table__.insert(), obs_list)
+    session.commit()
 
 
 def _max_id(session, tbl):
@@ -122,9 +144,9 @@ def _max_id(session, tbl):
             .scalar() 
     except:
         maxid = 0
-    print "MAXID", maxid
     if not maxid:
         maxid = 0
+    log.debug("{0} MAXID {1}".format(tbl, maxid))
     return maxid
 
 
