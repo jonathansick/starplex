@@ -29,10 +29,10 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.postgresql import HSTORE
 from sqlalchemy.ext.mutable import MutableDict
 
-from .meta import Base, point_str, multipolygon_str
+from .meta import Base, UniqueMixin, point_str, multipolygon_str
 
 
-class Catalog(Base):
+class Catalog(UniqueMixin, Base):
     """SQLAlchemy table for representing a source `catalog`."""
     __tablename__ = 'catalog'
 
@@ -55,6 +55,15 @@ class Catalog(Base):
         else:
             self.footprint = None
         self.meta = dict(metadata)
+
+    @classmethod
+    def unique_hash(cls, name, instrument, footprints=None, **metadata):
+        return "_".join((name, instrument))
+
+    @classmethod
+    def unique_filter(cls, query, name, instrument, footprints=None, **md):
+        return query.filter(Catalog.name == name)\
+                .filter(Catalog.instrument == instrument)
 
     def __repr__(self):
         return "<Catalog(%i)>" % self.id

@@ -9,7 +9,7 @@ import os
 import gzip
 
 import numpy as np
-from astropy ajimport log
+from astropy import log
 
 from starplex.utils import Timer
 from .ingestbase import init_catalog, add_observations

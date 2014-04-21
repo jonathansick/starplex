@@ -39,7 +39,8 @@ def init_catalog(session, name, instrument, band_names, band_system,
     if not meta:
         meta = {}
     # Pre-insert the catalog and bandpass
-    catalog = Catalog(name, instrument, footprints=footprint_polys, **meta)
+    catalog = Catalog.as_unique(session, name, instrument,
+        footprints=footprint_polys, **meta)
     session.add(catalog)
     # Ensure the bandpass exists
     for n in band_names:
