@@ -2,13 +2,16 @@
 # encoding: utf-8
 """
 Module for finding footprint overlaps.
+
+Use :class:`FootprintOverlaps` to finding Catalogs that overlap an arbitrary
+PostGIS multipolygon instance, or :class:`CatalogOverlaps` to find Catalogs
+that overlap a specific Catalog.
 """
 
-from sqlalchemy import func
-from sqlalchemy import not_
+from sqlalchemy import func, not_
 
-from .database import Catalog
-from .database.meta.gistools import sq_meter_to_sq_degree
+from ..observation import Catalog
+from .gistools import sq_meter_to_sq_degree
 
 
 class OverlapBase(object):
@@ -17,18 +20,29 @@ class OverlapBase(object):
         super(OverlapBase, self).__init__()
         self._s = session
         self._main_footprint = main_footprint
-        self._overlapping_catalogs = []
+        self.query = None
+        self._overlapping_catalogs = None
         self._clips = None  # overlapping polygons, will be list
         self._areas = None  # areas of overlaps
+
+    def _query_overlaps(self):
+        """Execute the query, reset caches"""
+        self._overlapping_catalogs = self.query.all()
+        self._clips = None
+        self._areas = None
         
     @property
     def count(self):
         """Number of overlaps"""
+        if self._overlapping_catalogs is None:
+            self._query_overlaps()
         return len(self._overlapping_catalogs)
 
     @property
     def catalogs(self):
         """List of overlapping catalogs"""
+        if self._overlapping_catalogs is None:
+            self._query_overlaps()
         return self._overlapping_catalogs
 
     @property
@@ -49,6 +63,8 @@ class OverlapBase(object):
         >>     for part in clip:
         >>         print session.query(func.ST_AsText(part)).one()
         """
+        if self._overlapping_catalogs is None:
+            self._query_overlaps()
         if self._clips is None:
             self._clips = []
             for catalog in self._overlapping_catalogs:
@@ -64,6 +80,8 @@ class OverlapBase(object):
         """Returns area of each overlap, as a list. Areas are given in
         square degrees.
         """
+        if self._overlapping_catalogs is none:
+            self._query_overlaps()
         if self._areas is None:
             self._areas = []
             for clip in self.clips:
@@ -78,6 +96,8 @@ class OverlapBase(object):
     @property
     def largest_overlapping_catalog(self):
         """Convenience accessor for Catalog entry with the largest overlap."""
+        if self._overlapping_catalogs is None:
+            self._query_overlaps()
         max_area = max(self.areas)
         max_index = self.areas.index(max_area)
         return self.catalogs[max_index]
@@ -85,23 +105,24 @@ class OverlapBase(object):
 
 class FootprintOverlaps(OverlapBase):
     """Queries catalogs that overlap the given footprint.
+
+    The query can be customized by chaining to the ``query`` attributed. e.g.
+
+       footprint_overlaps.query.filter(Catalog.instrument == my_instrument)
     
     Parameters
     ----------
     session :
         The active SQLAlchemy session instance.
-    footprint : 
+    footprint :
         The multipolygon instance to find overlaps against.
-    telescope : str
-        Value of ``telescope`` field in ``catalog`` table rows to query.
     """
-    def __init__(self, session, footprint, exclude=None, telescope=None):
+    def __init__(self, session, footprint, exclude=None):
         super(FootprintOverlaps, self).__init__(session, footprint)
         self._s = session
         self._footprint = footprint
-        self.telescope = telescope
         self._excluded_catalogs = exclude
-        self._overlapping_catalogs = self._query_from_footprint()
+        self.query = self._query_from_footprint()
 
     def _query_from_footprint(self):
         """Query for overlapping catalogs given a footprint, and possibly
@@ -113,29 +134,27 @@ class FootprintOverlaps(OverlapBase):
         if self._excluded_catalogs is not None:
             catalog_ids = [c.id for c in self._excluded_catalogs]
             q = q.filter(not_(Catalog.id.in_(catalog_ids)))
-        if self.telescope is not None:
-            q = q.filter(Catalog.telescope == self.telescope)
-        overlaps = q.all()
-        return overlaps
+        return q
 
 
 class CatalogOverlaps(OverlapBase):
     """Queries catalogs that overlap a principle catalog.
+
+    The query can be customized by chaining to the ``query`` attributed. e.g.
+
+       catalog_overlaps.query.filter(Catalog.instrument == my_instrument)
     
     Parameters
     ----------
     session :
         The active SQLAlchemy session instance.
-    catalog : :class:`starplex.database.models.Catalog` instance
+    catalog : :class:`starplex.Catalog` instance
         The :class:`Catalog` instance to find footprint overlaps against.
-    telescope : str
-        Value of ``telescope`` field in ``catalog`` table rows to query.
     """
-    def __init__(self, session, catalog, telescope=None):
+    def __init__(self, session, catalog):
         super(CatalogOverlaps, self).__init__(session, catalog.footprint)
         self.main_catalog = catalog
-        self.telescope = telescope
-        self._overlapping_catalogs = self._query_from_catalog(self.main_catalog)
+        self.query = self._query_from_catalog(self.main_catalog)
 
     def _query_from_catalog(self, main_catalog):
         """Query for overlapping catalogs given a principle catalog.
@@ -145,15 +164,4 @@ class CatalogOverlaps(OverlapBase):
             .filter(func.ST_Intersects(
                 Catalog.footprint, self._main_footprint))\
             .filter(Catalog.id != main_catalog.id)
-        if self.telescope is not None:
-            q = q.filter(Catalog.telescope == self.telescope)
-        overlaps = q.all()
-        return overlaps
-
-
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
+        return q
