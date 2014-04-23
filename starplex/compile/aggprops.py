@@ -6,7 +6,6 @@ been compiled, what the aggregate footprint is, etc..
 """
 
 from sqlalchemy import func
-# from geoalchemy2 import Geography
 
 from ..database import CatalogStar, Catalog
 
@@ -31,11 +30,3 @@ def compiled_footprint(session, catalogs):
                     *[catalog.footprint for catalog in catalogs])).\
                 one()[0]
     return agg_footprint
-
-
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()

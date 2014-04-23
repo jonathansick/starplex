@@ -4,11 +4,12 @@
 Compile the star catalog using basic PostGIS spatial joins.
 """
 
+from astropy import log
 from ..database import Catalog, CatalogStar, Observation, Star
 from ..overlap import FootprintOverlaps
 from ..database.meta.gistools import degree_to_meter
 from .aggprops import compiled_footprint, compiled_catalogs
-from . import seed
+from .seed import seed_star_table
 
 
 class SpatialJoiner(object):
@@ -19,9 +20,9 @@ class SpatialJoiner(object):
 
     def seed_catalog(self, catalog, reset=True):
         """Initialize the star catalog using a seed observational catalog."""
-        seed.seed_star_table(self._s, catalog, reset=reset)
+        seed_star_table(self._s, catalog, reset=reset)
 
-    def accrete_catalogs(self, r_tol, bandpass, query=None, telescope=None,
+    def accrete_catalogs(self, r_tol, bandpass, instrument=None,
             no_new=False):
         """Accrete observational catalogs onto the star catalog given
         the query constraints on the catalogs to add.
@@ -30,15 +31,12 @@ class SpatialJoiner(object):
         ----------
         r_tol : float
             Join search radius tolerance, in arcseconds.
-        bandpass : :class:``starplex.database.models.Bandpass``
+        bandpass : :class:``starplex.database.Bandpass``
             The bandpass to be used to order the observed stars from brightest
             to faintest; this ordering matches bright stars first, to faint
             stars.
-        query : 
-            An SQLAlchemy query statement against the catalog table. If not
-            provided, a query will be built using other constraints.
-        telescope : str
-            Constraint on the ``telescope`` field of catalogs to add.
+        instrument : str
+            Constraint on the ``instrument`` field of catalogs to add.
         no_new : bool
             If ``True`` then stars from this catalog will be matched to stars
             in the ``Star`` table, but unmatched stars will not create new
@@ -48,16 +46,17 @@ class SpatialJoiner(object):
         while True:
             catalogs = compiled_catalogs(self._s)
             footprint = compiled_footprint(self._s, catalogs)
-            print "Accreted catalogs", catalogs
-            print "Total footprint", footprint
+            log.info("Accreted catalogs:\n{}".
+                    format([str(c) for c in catalogs]))
+            log.info("Total footprint {}".format(str(footprint)))
             overlaps = FootprintOverlaps(self._s, footprint,
-                    exclude=catalogs,
-                    telescope=telescope)
-            # TODO use ``query`` to customize the query
+                    exclude=catalogs)
+            if instrument is not None:
+                overlaps.query.filter(Catalog.instrument == instrument)
             if overlaps.count == 0:
                 break
             next_catalog = overlaps.largest_overlapping_catalog
-            print "Ingesting:", next_catalog
+            log.info("Ingesting: {}".format(str(next_catalog)))
             self.join_catalog(next_catalog, r_tol, bandpass,
                     no_new=no_new)
 
@@ -90,17 +89,8 @@ class SpatialJoiner(object):
             filter(CatalogStar.catalog == catalog).\
             filter(CatalogStar.star == None).\
             order_by(Observation.mag.desc())
-        print "cstar_query.count", cstar_query.count()
+        log.debug("cstar_query.count {0:d}".format(cstar_query.count()))
         for i, cstar in enumerate(cstar_query):
-            # FIXME Subquery: for a given star, what catalogs observed it?
-            # star_catalogs_subq = self._s.query(Catalog.id).\
-            #         join(CatalogStar, CatalogStar.catalog_id == Catalog.id).\
-            #         join(Star, Star.id == CatalogStar.star_id).\
-            #         correlate(Star).subquery()
-            # Problem is I can't get .in_ on many-to-one relationship
-            # filter(~cstar.catalog.in_(star_catalogs_subq)).
-            # thus I'll manually iterate through spatial match to ensure
-            # star is not already included in the catalog
             # FIXME returns too many stars
             q = self._s.query(Star).\
                     filter(cstar.coord.ST_DWithin(
@@ -108,7 +98,7 @@ class SpatialJoiner(object):
                     order_by(cstar.coord.ST_Distance(Star.coord))
             _ingested = False
             if i % 100 == 0:
-                print i, q.count()
+                log.debug("{0:d}, {1:d}".format(i, q.count()))
             if q.count() > 0:
                 for matched_star in q:
                     # Check this star is not already included in this catalog
@@ -122,9 +112,10 @@ class SpatialJoiner(object):
                     # unpack to a list of Catalog ids
                     catalog_ids = [x[0] for x in star_catalogs_q.all()]
                     if i % 100 == 0:
-                        print "\t", matched_star
-                        print "\tcount of member catalogs", star_catalogs_q.count()
-                        print "\t", catalog_ids
+                        log.debug("\t{}".format(str(matched_star)))
+                        log.debug("\tcount of member catalogs: {0:d}".
+                                format(star_catalogs_q.count()))
+                        log.debug("\t{}".format(str(catalog_ids)))
                     if cstar.catalog_id not in catalog_ids:
                         # This star can be joined
                         self._add_to_star(cstar, matched_star)
@@ -136,7 +127,7 @@ class SpatialJoiner(object):
                 self._add_new_star(cstar)
                 new_count += 1
             if i % 100 == 0:
-                print "\tmatched %i new %i" % (matched_count, new_count)
+                log.debug("\tmatched %i new %i" % (matched_count, new_count))
 
 
     def _add_to_star(self, catalog_star, matched_star):
@@ -148,11 +139,3 @@ class SpatialJoiner(object):
         """Insert a new catalog star into the Star table."""
         star = Star(catalog_star.coord)
         catalog_star.star = star
-
-
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
