@@ -10,7 +10,7 @@ Setting up the database
 -----------------------
 
 Starplex requires a working PostgreSQL database.
-On a Mac, the best way to get this is with `Postgres.app<http://postgresapp.com>`_.
+On a Mac, the best way to get this is with `Postgres.app <http://postgresapp.com>`_.
 Running this will create a user corresponding to your login account name.
 Login to the default database using ``psql`` and prepare a new one for Starplex::
 
