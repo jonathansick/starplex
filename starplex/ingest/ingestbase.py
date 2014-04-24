@@ -132,6 +132,14 @@ def add_observations(session, name, instrument, band_names, band_system,
             obs_list.append({"id": id_obs,
                 "catalogstar_id": id_star, "bandpass_id": band_id,
                 "mag": mag[i, j], "mag_err": mag_err[i, j]})
+        if i % 10 == 0:
+            log.debug("Executing chunk")
+            session.execute(CatalogStar.__table__.insert(), cstars)
+            session.execute(Observation.__table__.insert(), obs_list)
+            session.commit()
+            log.debug("Committed chunk")
+            cstars = []
+            obs_list = []
     session.execute(CatalogStar.__table__.insert(), cstars)
     session.execute(Observation.__table__.insert(), obs_list)
     session.commit()
@@ -144,7 +152,7 @@ def _max_id(session, tbl):
     try:
         maxid = session.execute(select([
             func.max(tbl.c.id, type_=Integer).label('maxid')]))\
-            .scalar() 
+            .scalar()
     except:
         maxid = 0
     if not maxid:

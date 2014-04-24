@@ -19,7 +19,7 @@ PSC_FORMAT = [('ra', float), ('dec', float),
         ('err_maj', float), ('err_min', float), ('err_ang', int),
         ('designation', object),
         ('j_m', float), ('j_cmsig', float), ('j_msigcom', float),
-        ('j_snr', float), ('h_m', float), ('h_cmsig', float), 
+        ('j_snr', float), ('h_m', float), ('h_cmsig', float),
         ('h_msigcom', float), ('h_snr', float), ('k_m', float),
         ('k_cmsig', float), ('k_msigcom', float), ('k_snr', float),
         ('ph_qual', object), ('rd_flg', object), ('bl_flg', object),
@@ -48,11 +48,11 @@ class TwoMassPSCIngest(object):
     >>> log.setLevel('INFO')
     >>> from starplex.database import connect, Session, create_all
     >>> from starplex.ingest import TwoMassPSCIngest
-    >>> connect(user='jsick', name='starplex')
+    >>> connect(user='starplex', name='starplex')
     >>> session = Session()
     >>> create_all()
     >>> tm_ingester = TwoMassPSCIngest(session, data_dir)
-    >>> tm_ingester.ingest_region('2MASS_PSC', [9, 11], [37, 43])
+    >>> tm_ingester.ingest_region('2MASS_PSC', [7.5, 17], [36, 47])
 
     Parameters
     ----------
@@ -137,6 +137,7 @@ class TwoMassPSCIngest(object):
             magerr_keys = ["%s_msigcom" % k for k in ('j', 'h', 'k')]
             mags = np.column_stack([data[k][sel] for k in mag_keys])
             mag_errs = np.column_stack([data[k][sel] for k in magerr_keys])
+            log.debug("Running add_observations")
             add_observations(self._s, "2MASS_PSC", "2MASS",
                     self._band_names, self._band_system,
                     z, z,
