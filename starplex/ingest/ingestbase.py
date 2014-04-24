@@ -120,18 +120,18 @@ def add_observations(session, name, instrument, band_names, band_system,
     for i, id_star in enumerate(
             xrange(id_star_0 + 1, id_star_0 + n_stars + 1)):
         cstars.append({"id": id_star,
-            "x": x[i], "y": y[i],
-            "ra": ra[i], "dec": dec[i],
-            "ra_err": ra_err[i], "dec_err": dec_err[i],
+            "x": float(x[i]), "y": float(y[i]),
+            "ra": float(ra[i]), "dec": float(dec[i]),
+            "ra_err": float(ra_err[i]), "dec_err": float(dec_err[i]),
             "coord": point_str(ra[i], dec[i]),
-            "cfrac": cfrac[i],
+            "cfrac": float(cfrac[i]),
             "catalog_id": catalog_id,
             "star_id": None})
         for j, band_id in enumerate(band_ids):
             id_obs += 1
             obs_list.append({"id": id_obs,
                 "catalogstar_id": id_star, "bandpass_id": band_id,
-                "mag": mag[i, j], "mag_err": mag_err[i, j]})
+                "mag": float(mag[i, j]), "mag_err": float(mag_err[i, j])})
         if i % 10 == 0:
             log.debug("Executing chunk")
             session.execute(CatalogStar.__table__.insert(), cstars)
