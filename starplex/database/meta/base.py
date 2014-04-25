@@ -18,6 +18,30 @@ engine = None
 Session = sessionmaker()
 
 
+def connect_to_server(server_name, **kwargs):
+    """Connect to a named server, configured in ~/.starplex.json.
+
+    Parameters
+    ----------
+    host : str
+        Hostname
+    port : int
+        Server port
+    user : str
+        Username for server
+    password : str
+        Password to log into server
+    name : str
+        Name of database
+    kwargs : dict
+        Additional keyword arguments passed to ``sqlalchemy.create_engine``.
+    """
+    from starplex.settings import locate_server
+    configs = locate_server(server_name)
+    configs.update(kwargs)
+    connect(**configs)
+
+
 def connect(host="localhost", port=5432, user=None, name=None, password=None,
         **kwargs):
     """Establish a connection to the Postgres database.
@@ -40,10 +64,12 @@ def connect(host="localhost", port=5432, user=None, name=None, password=None,
         Password to log into server
     name : str
         Name of database
+    kwargs : dict
+        Additional keyword arguments passed to ``sqlalchemy.create_engine``.
     """
     global engine
     url = _build_url(host, port, name, user, password)
-    engine = create_engine(url)
+    engine = create_engine(url, **kwargs)
     Session.configure(bind=engine)
     Base.metadata.bind = engine
 
