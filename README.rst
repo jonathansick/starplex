@@ -64,7 +64,9 @@ Browse the ``starplex/database`` directory to see how the models are constructed
 Connecting to a Session
 -----------------------
 
-The most way to get an SQLAlchemy session, and hence begin with the database, is with the ``connect`` function::
+The most way to get an SQLAlchemy session, and hence begin with the database, is with the ``connect`` function:
+
+.. code:: python
 
     from starplex.database import connect, Session, create_all
     connect(user="starplex", name="starplex", host="localhost", port=5432, echo=True)
@@ -74,7 +76,9 @@ The most way to get an SQLAlchemy session, and hence begin with the database, is
 Note that ``echo`` is an extra keyword passed to the SQLAlchemy engine.
 
 Sometimes it's easier to maintain database connection info in a configuration file.
-This can be done by creating a ``~/.starplex.json`` file with a format similar to::
+This can be done by creating a ``~/.starplex.json`` file with a format similar to:
+
+.. code:: javascript
 
    {"servers":
        {"marvin": {"host": "localhost",
@@ -86,7 +90,9 @@ This can be done by creating a ``~/.starplex.json`` file with a format similar t
    }
 
 Here we've named a server call ``marvin``.
-Now we can connect to a named server with::
+Now we can connect to a named server with:
+
+.. code:: python
 
    from starplex.database import connect_to_server, Session, create_all
    connect_to_server("marvin", echo=True)
@@ -114,7 +120,9 @@ Querying an Observational Catalog to get a NumPy Structured Array
 
 Suppose you've loaded an HST/ACS star catalog named ``'disk'`` with photometry in filters named ``'f606w'`` and ``'f814w'``.
 We'd like to retrieve this observational catalog into a structured numpy array of stellar RA, Dec, completeness fraction, and magnitudes in F606W and F814W.
-This can be accomplished with the following script::
+This can be accomplished with the following script:
+
+.. code:: python
 
     import numpy as np
     from sqlalchemy.orm import aliased
