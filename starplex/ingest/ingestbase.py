@@ -105,7 +105,8 @@ def add_observations(session, name, instrument, band_names, band_system,
 
     # Pre-fetch catalog ids and band ids
     catalog_id = session.query(Catalog).\
-            filter(Catalog.name == name).one().id
+            filter(Catalog.name == name).\
+            filter(Catalog.instrument == instrument).one().id
     band_ids = [session.query(Bandpass).
             filter(Bandpass.name == n).
             filter(Bandpass.system == band_system).one().id
