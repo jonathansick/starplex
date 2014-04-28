@@ -126,8 +126,7 @@ class Observation(Base):
 
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
     bandpass = relationship("Bandpass",
-            foreign_keys="[Observation.bandpass_id]",
-            backref=backref('observations', order_by=id))
+            foreign_keys="[Observation.bandpass_id]")
 
     catalogstar_id = Column(Integer,
             ForeignKey('catalog_star.id', ondelete="CASCADE"))
