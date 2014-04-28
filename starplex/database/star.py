@@ -25,7 +25,7 @@ Two resources for using PostGIS in astronomy are:
 from sqlalchemy import Column, Integer, Float
 from geoalchemy2 import Geography
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 
 from .meta import Base, point_str
 
@@ -40,6 +40,10 @@ class Star(Base):
     dec = Column(Float)
     dec_err = Column(Float)
     coord = Column(Geography(geometry_type='POINT', srid=4326))
+
+    # Relationship to magnitude with delete cascade
+    magnitudes = relationship("Magnitude", backref="star",
+            cascade="all, delete, delete-orphan")
 
     def __init__(self, ra, dec, ra_err, dec_err):
         self.ra = ra
@@ -62,16 +66,11 @@ class Magnitude(Base):
     mag = Column(Float)
     mag_err = Column(Float)
 
-    # Many to one on bandpass
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
     bandpass = relationship("Bandpass",  # no need to backref
             foreign_keys="[Magnitude.bandpass_id]")
 
-    # Many to one on star
     star_id = Column(Integer, ForeignKey('star.id'))
-    star = relationship("Star",
-            foreign_keys="[Magnitude.star_id]",
-            backref=backref("magnitudes", order_by=id))
 
     def __init__(self, mag, mag_err, bandpass, star):
         self.mag = mag

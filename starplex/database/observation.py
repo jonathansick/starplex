@@ -47,6 +47,9 @@ class Catalog(UniqueMixin, Base):
             default={},
             index=True)
 
+    catalog_stars = relationship("CatalogStar", backref="catalog",
+            cascade="all, delete, delete-orphan")
+
     def __init__(self, name, instrument, footprints=None, **metadata):
         self.name = name
         self.instrument = instrument
@@ -63,7 +66,7 @@ class Catalog(UniqueMixin, Base):
     @classmethod
     def unique_filter(cls, query, name, instrument, footprints=None, **md):
         return query.filter(Catalog.name == name)\
-                .filter(Catalog.instrument == instrument)
+            .filter(Catalog.instrument == instrument)
 
     def __repr__(self):
         return "<Catalog(%i)>" % self.id
@@ -84,18 +87,19 @@ class CatalogStar(Base):
     dec_err = Column(Float)
     coord = Column(Geography(geometry_type='POINT', srid=4326))
     cfrac = Column(Float)
-
-    # Many to one
+    
+    # Reference catalog we belong to (Catalog defines relationship)
     catalog_id = Column(Integer, ForeignKey('catalog.id'))
-    catalog = relationship("Catalog",
-            foreign_keys="[CatalogStar.catalog_id]",
-            backref=backref('catalog_stars', order_by=id))
 
     # Reference the star we associate to
     star_id = Column(Integer, ForeignKey('star.id'))
     star = relationship("Star",
             foreign_keys="[CatalogStar.star_id]",
             backref=backref('catalog_stars', order_by=id))
+
+    # Relationship to Observation
+    observations = relationship("Observation", backref="catalog_star",
+            cascade="all, delete, delete-orphan")
 
     def __init__(self, x, y, ra, dec, ra_err, dec_err, cfrac):
         self.x = x
@@ -127,9 +131,6 @@ class Observation(Base):
             backref=backref('observations', order_by=id))
 
     catalogstar_id = Column(Integer, ForeignKey('catalog_star.id'))
-    catalogstar = relationship("CatalogStar",
-            foreign_keys="[Observation.catalogstar_id]",
-            backref=backref('observations', order_by=id))
 
     def __init__(self, mag, mag_err):
         self.mag = mag
