@@ -141,9 +141,10 @@ def add_observations(session, name, instrument, band_names, band_system,
             log.debug("Committed chunk")
             cstars = []
             obs_list = []
-    session.execute(CatalogStar.__table__.insert(), cstars)
-    session.execute(Observation.__table__.insert(), obs_list)
-    session.commit()
+    if len(cstars) > 0:  # insert remainders
+        session.execute(CatalogStar.__table__.insert(), cstars)
+        session.execute(Observation.__table__.insert(), obs_list)
+        session.commit()
 
 
 def _max_id(session, tbl):
