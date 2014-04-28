@@ -42,7 +42,8 @@ class Star(Base):
     coord = Column(Geography(geometry_type='POINT', srid=4326))
 
     # Relationship to magnitude with delete cascade
-    magnitudes = relationship("Magnitude", backref="star")
+    magnitudes = relationship("Magnitude", backref="star",
+        passive_deletes=True)
 
     def __init__(self, ra, dec, ra_err, dec_err):
         self.ra = ra

@@ -47,7 +47,8 @@ class Catalog(UniqueMixin, Base):
             default={},
             index=True)
 
-    catalog_stars = relationship("CatalogStar", backref="catalog")
+    catalog_stars = relationship("CatalogStar", backref="catalog",
+            passive_deletes=True)
 
     def __init__(self, name, instrument, footprints=None, **metadata):
         self.name = name
@@ -69,6 +70,24 @@ class Catalog(UniqueMixin, Base):
 
     def __repr__(self):
         return "<Catalog(%i)>" % self.id
+
+    def delete(self, session):
+        """Delete this catalog and cleanup orphan catalog stars and
+        observations.
+        """
+        # ForeignKey constrains CASCADE on delete
+        session.delete(self)
+        session.commit()
+        # Clean up any orphan CatalogStars
+        session.query(CatalogStar).\
+            filter(CatalogStar.catalog_id.is_(None)).\
+            delete(synchronize_session=False)
+        session.commit()
+        # Clean up any orphan Observations
+        session.query(Observation).\
+            filter(Observation.catalog_star_id.is_(None)).\
+            delete(synchronize_session=False)
+        session.commit()
 
 
 class CatalogStar(Base):
@@ -98,7 +117,8 @@ class CatalogStar(Base):
             backref=backref('catalog_stars', order_by=id))
 
     # Relationship to Observation
-    observations = relationship("Observation", backref="catalog_star")
+    observations = relationship("Observation", backref="catalog_star",
+            passive_deletes=True)
 
     def __init__(self, x, y, ra, dec, ra_err, dec_err, cfrac):
         self.x = x
@@ -128,7 +148,7 @@ class Observation(Base):
     bandpass = relationship("Bandpass",
             foreign_keys="[Observation.bandpass_id]")
 
-    catalogstar_id = Column(Integer,
+    catalog_star_id = Column(Integer,
             ForeignKey('catalog_star.id', ondelete="CASCADE"))
 
     def __init__(self, mag, mag_err):
