@@ -42,8 +42,7 @@ class Star(Base):
     coord = Column(Geography(geometry_type='POINT', srid=4326))
 
     # Relationship to magnitude with delete cascade
-    magnitudes = relationship("Magnitude", backref="star",
-            cascade="all, delete, delete-orphan")
+    magnitudes = relationship("Magnitude", backref="star")
 
     def __init__(self, ra, dec, ra_err, dec_err):
         self.ra = ra
@@ -70,7 +69,8 @@ class Magnitude(Base):
     bandpass = relationship("Bandpass",  # no need to backref
             foreign_keys="[Magnitude.bandpass_id]")
 
-    star_id = Column(Integer, ForeignKey('star.id'))
+    star_id = Column(Integer,
+            ForeignKey('star.id', ondelete="CASCADE"))
 
     def __init__(self, mag, mag_err, bandpass, star):
         self.mag = mag

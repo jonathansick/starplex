@@ -47,8 +47,7 @@ class Catalog(UniqueMixin, Base):
             default={},
             index=True)
 
-    catalog_stars = relationship("CatalogStar", backref="catalog",
-            cascade="all, delete, delete-orphan")
+    catalog_stars = relationship("CatalogStar", backref="catalog")
 
     def __init__(self, name, instrument, footprints=None, **metadata):
         self.name = name
@@ -89,7 +88,8 @@ class CatalogStar(Base):
     cfrac = Column(Float)
     
     # Reference catalog we belong to (Catalog defines relationship)
-    catalog_id = Column(Integer, ForeignKey('catalog.id'))
+    catalog_id = Column(Integer,
+            ForeignKey('catalog.id', ondelete='CASCADE'))
 
     # Reference the star we associate to
     star_id = Column(Integer, ForeignKey('star.id'))
@@ -98,8 +98,7 @@ class CatalogStar(Base):
             backref=backref('catalog_stars', order_by=id))
 
     # Relationship to Observation
-    observations = relationship("Observation", backref="catalog_star",
-            cascade="all, delete, delete-orphan")
+    observations = relationship("Observation", backref="catalog_star")
 
     def __init__(self, x, y, ra, dec, ra_err, dec_err, cfrac):
         self.x = x
@@ -130,7 +129,8 @@ class Observation(Base):
             foreign_keys="[Observation.bandpass_id]",
             backref=backref('observations', order_by=id))
 
-    catalogstar_id = Column(Integer, ForeignKey('catalog_star.id'))
+    catalogstar_id = Column(Integer,
+            ForeignKey('catalog_star.id', ondelete="CASCADE"))
 
     def __init__(self, mag, mag_err):
         self.mag = mag
