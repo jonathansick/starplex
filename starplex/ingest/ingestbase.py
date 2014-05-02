@@ -131,7 +131,7 @@ def add_observations(session, name, instrument, band_names, band_system,
         for j, band_id in enumerate(band_ids):
             id_obs += 1
             obs_list.append({"id": id_obs,
-                "catalogstar_id": id_star, "bandpass_id": band_id,
+                "catalog_star_id": id_star, "bandpass_id": band_id,
                 "mag": float(mag[i, j]), "mag_err": float(mag_err[i, j])})
         if i % 10 == 0:
             log.debug("Executing chunk")
