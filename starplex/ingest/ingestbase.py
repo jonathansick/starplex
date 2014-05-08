@@ -14,6 +14,33 @@ from ..database import Catalog, CatalogStar, Observation, Bandpass
 from ..database.meta import point_str
 
 
+def catalog_exists(session, name, instrument):
+    """Check if an observational Catalog is already ingested.
+    
+    Parameters
+    ----------
+    session : ``Session``
+        The session instance.
+    name : str
+        Name of the Catalog.
+    instrument : str
+        Name of the instrument.
+
+    Returns
+    -------
+    exists : bool
+        True if the catalog already exists, False otherwise.
+    """
+    count = session.query(Catalog).\
+            filter(Catalog.name == name).\
+            filter(Catalog.instrument == instrument).\
+            count()
+    if count == 0:
+        return False
+    else:
+        return True
+
+
 def init_catalog(session, name, instrument, band_names, band_system,
         footprint_polys=None, meta=None):
     """Insert a new observational catalog. Follow this up with
