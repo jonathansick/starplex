@@ -4,6 +4,7 @@
 Handles catalog ingest.
 """
 
+import numpy as np
 from astropy.wcs import WCS
 from astropy import log
 
@@ -156,10 +157,12 @@ def add_observations(session, name, instrument, band_names, band_system,
             "catalog_id": catalog_id,
             "star_id": None})
         for j, band_id in enumerate(band_ids):
-            id_obs += 1
-            obs_list.append({"id": id_obs,
-                "catalog_star_id": id_star, "bandpass_id": band_id,
-                "mag": float(mag[i, j]), "mag_err": float(mag_err[i, j])})
+            if np.isfinite(mag[i, j]):
+                # skip NaN values
+                id_obs += 1
+                obs_list.append({"id": id_obs,
+                    "catalog_star_id": id_star, "bandpass_id": band_id,
+                    "mag": float(mag[i, j]), "mag_err": float(mag_err[i, j])})
         if i % 10 == 0:
             log.debug("Executing chunk")
             session.execute(CatalogStar.__table__.insert(), cstars)
