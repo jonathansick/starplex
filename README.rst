@@ -59,7 +59,19 @@ Reduced catalogs are stored across two tables:
 - ``star`` defines a unique star
 - ``magnitude`` defines a photometric quality of a single star in a single bandpass.
 
-Browse the ``starplex/database`` directory to see how the models are constructed. 
+Browse the ``starplex/database`` directory to see how the models are constructed.
+
+Useful Indices
+--------------
+
+It's up to the user to setup indices (aside from primary key indices that Postgres creates).
+It is useful to make indices on foreign keys::
+
+    CREATE INDEX CONCURRENTLY idx_fk_bandpass_id on observation USING btree (bandpass_id);
+    CREATE INDEX CONCURRENTLY idx_fk_catalog_star_id on observation USING btree (catalog_star_id);
+    CREATE INDEX CONCURRENTLY idx_fk_catalog_id on catalog_star USING btree (catalog_id);
+
+Keep in mind that you'll want to drop these indices when ingesting large data sets using ``DROP INDEX idx_name``.
 
 Connecting to a Session
 -----------------------
