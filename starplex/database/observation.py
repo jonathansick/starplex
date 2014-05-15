@@ -101,9 +101,6 @@ class CatalogStar(Base):
     y = Column(Float)
     ra = Column(Float)
     dec = Column(Float)
-    ra_err = Column(Float)
-    dec_err = Column(Float)
-    coord = Column(Geography(geometry_type='POINT', srid=4326))
     cfrac = Column(Float)
     
     # Reference catalog we belong to (Catalog defines relationship)
@@ -120,16 +117,13 @@ class CatalogStar(Base):
     observations = relationship("Observation", backref="catalog_star",
             passive_deletes=True)
 
-    def __init__(self, x, y, ra, dec, ra_err, dec_err, cfrac):
+    def __init__(self, x, y, ra, dec, cfrac):
         self.x = x
         self.y = y
         assert ra >= 0. and ra <= 360.
         assert dec >= -90. and dec <= 90.
-        self.coord = point_str(ra, dec)
         self.ra = ra
         self.dec = dec
-        self.ra_err = ra_err
-        self.dec_err = dec_err
         self.cfrac = cfrac
 
     def __repr__(self):

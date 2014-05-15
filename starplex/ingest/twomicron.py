@@ -141,7 +141,7 @@ class TwoMassPSCIngest(object):
             add_observations(self._s, "2MASS_PSC", "2MASS",
                     self._band_names, self._band_system,
                     z, z,
-                    data['ra'][sel], z, data['dec'][sel], z,
+                    data['ra'][sel], data['dec'][sel],
                     mags, mag_errs, ones)
         log.info("Inserted {0:d} stars in {1:.1f} seconds".
                 format(nstars, insert_timer.interval))

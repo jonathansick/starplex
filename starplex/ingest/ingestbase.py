@@ -78,7 +78,7 @@ def init_catalog(session, name, instrument, band_names, band_system,
 
 
 def add_observations(session, name, instrument, band_names, band_system,
-        x, y, ra, ra_err, dec, dec_err, mag, mag_err, cfrac):
+        x, y, ra, dec, mag, mag_err, cfrac):
     """Insert and observational catalog (Catalog, CatalogStar and Observation
     tables) efficiently with SQLAlchemy Core.
 
@@ -104,12 +104,8 @@ def add_observations(session, name, instrument, band_names, band_system,
         Y-coordinates of stars on reference image.
     ra : ``ndarray``, (n_stars,)
         RA-coordinates of stars.
-    ra_err : ``ndarray``, (n_stars,)
-        Uncertainty of RA-coordinates of stars.
     dec : ``ndarray``, (n_stars,)
         Dec-coordinates of stars.
-    dec_err : ``ndarray``, (n_stars,)
-        Uncertainty of Dec-coordinates of stars.
     mag : ``ndarray``, (n_stars, n_bands)
         Magnitudes of stars.
     mag_err : ``ndarray``, (n_stars, n_bands
@@ -122,9 +118,7 @@ def add_observations(session, name, instrument, band_names, band_system,
     assert n_bands == mag.shape[1]
     assert n_bands == mag_err.shape[1]
     assert n_stars == ra.shape[0]
-    assert n_stars == ra_err.shape[0]
     assert n_stars == dec.shape[0]
-    assert n_stars == dec_err.shape[0]
     assert n_stars == mag.shape[0]
     assert n_stars == mag_err.shape[0]
     assert n_stars == x.shape[0]
@@ -151,8 +145,6 @@ def add_observations(session, name, instrument, band_names, band_system,
         cstars.append({"id": id_star,
             "x": float(x[i]), "y": float(y[i]),
             "ra": float(ra[i]), "dec": float(dec[i]),
-            "ra_err": float(ra_err[i]), "dec_err": float(dec_err[i]),
-            "coord": point_str(ra[i], dec[i]),
             "cfrac": float(cfrac[i]),
             "catalog_id": catalog_id,
             "star_id": None})
