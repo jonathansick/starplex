@@ -47,7 +47,7 @@ class OverlapBase(object):
 
     @property
     def clips(self):
-        """Polygons representing the intersecting areas between the princpiple
+        """Polygons representing the intersecting areas between the principal
         catalog and all overlapping catalogs.
         
         Returns a list of tuples of :class:``WKBElement`` for each
@@ -69,9 +69,9 @@ class OverlapBase(object):
             self._clips = []
             for catalog in self._overlapping_catalogs:
                 clip = self._s.\
-                        query(func.ST_Intersection(
-                            catalog.footprint, self._main_footprint))\
-                        .one()
+                    query(func.ST_Intersection(
+                          catalog.footprint, self._main_footprint)).\
+                    one()
                 self._clips.append(clip)
         return self._clips
 
@@ -80,7 +80,7 @@ class OverlapBase(object):
         """Returns area of each overlap, as a list. Areas are given in
         square degrees.
         """
-        if self._overlapping_catalogs is none:
+        if self._overlapping_catalogs is None:
             self._query_overlaps()
         if self._areas is None:
             self._areas = []
@@ -88,9 +88,10 @@ class OverlapBase(object):
                 A = 0.
                 for part in clip:
                     A += self._s.scalar(part.ST_Area(use_spheroid=False))
-                # A is in square meters, given a Geography type
-                # covert to square degrees
-                self._areas.append(sq_meter_to_sq_degree(A))
+                # Since clips area created by ST_Intersection, they are
+                # polygons in WK84 (Lat long), thus the areas should
+                # automatically be in square degrees.
+                self._areas.append(A)
         return self._areas
 
     @property
@@ -138,7 +139,7 @@ class FootprintOverlaps(OverlapBase):
 
 
 class CatalogOverlaps(OverlapBase):
-    """Queries catalogs that overlap a principle catalog.
+    """Queries catalogs that overlap a principal catalog.
 
     The query can be customized by chaining to the ``query`` attributed. e.g.
 
@@ -157,7 +158,7 @@ class CatalogOverlaps(OverlapBase):
         self.query = self._query_from_catalog(self.main_catalog)
 
     def _query_from_catalog(self, main_catalog):
-        """Query for overlapping catalogs given a principle catalog.
+        """Query for overlapping catalogs given a principal catalog.
         Returns a list of overlapping catalogs.
         """
         q = self._s.query(Catalog)\
