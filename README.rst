@@ -70,7 +70,12 @@ It is useful to make indices on foreign keys::
     CREATE INDEX CONCURRENTLY idx_fk_bandpass_id on observation USING btree (bandpass_id);
     CREATE INDEX CONCURRENTLY idx_fk_catalog_star_id on observation USING btree (catalog_star_id);
     CREATE INDEX CONCURRENTLY idx_fk_catalog_id on catalog_star USING btree (catalog_id);
+    CREATE INDEX idx_bandpass_name ON bandpass (name);
+    CREATE INDEX idx_bandpass_system ON bandpass (system);
+    CREATE INDEX idx_catalog_name ON catalog (name);
+    CREATE INDEX idx_catalog_instrument ON catalog (instrument);
 
+Be sure to run ANALYZE on each table after creating an index.
 Keep in mind that you'll want to drop these indices when ingesting large data sets using ``DROP INDEX idx_name``.
 
 Connecting to a Session
