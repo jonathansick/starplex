@@ -40,7 +40,7 @@ class Catalog(UniqueMixin, Base):
     name = Column(String)
     instrument = Column(String)
     footprint = Column(Geography(geometry_type='MULTIPOLYGON', srid=4326))
-    metajson = Column(MutableDict.as_mutable(JSON), default={})
+    meta = Column(MutableDict.as_mutable(JSON), default={})
 
     catalog_stars = relationship("CatalogStar", backref="catalog",
             passive_deletes=True)
