@@ -26,10 +26,10 @@ from sqlalchemy import Column, Integer, String, Float
 from geoalchemy2 import Geography
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.dialects.postgresql import HSTORE
+from sqlalchemy.dialects.postgresql import HSTORE, JSON
 from sqlalchemy.ext.mutable import MutableDict
 
-from .meta import Base, UniqueMixin, point_str, multipolygon_str
+from .meta import Base, UniqueMixin, multipolygon_str
 
 
 class Catalog(UniqueMixin, Base):
@@ -46,6 +46,7 @@ class Catalog(UniqueMixin, Base):
             nullable=False,
             default={},
             index=True)
+    metajson = Column(MutableDict.as_mutable(JSON), default={})
 
     catalog_stars = relationship("CatalogStar", backref="catalog",
             passive_deletes=True)
