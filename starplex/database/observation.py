@@ -26,7 +26,7 @@ from sqlalchemy import Column, Integer, String, Float
 from geoalchemy2 import Geography
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.dialects.postgresql import HSTORE, JSON
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.mutable import MutableDict
 
 from .meta import Base, UniqueMixin, multipolygon_str
@@ -38,14 +38,8 @@ class Catalog(UniqueMixin, Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    # catalogpath = Column(String)
-    # fitspath = Column(String)
     instrument = Column(String)
     footprint = Column(Geography(geometry_type='MULTIPOLYGON', srid=4326))
-    meta = Column(MutableDict.as_mutable(HSTORE),
-            nullable=False,
-            default={},
-            index=True)
     metajson = Column(MutableDict.as_mutable(JSON), default={})
 
     catalog_stars = relationship("CatalogStar", backref="catalog",
