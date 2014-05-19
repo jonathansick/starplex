@@ -3,10 +3,17 @@
 """
 Pipeline for computing inter-catalog zeropoint calibrations by minimizing
 field-to-field zeropoint differences.
+
+The pipeline is run with three successive functions
+
+1. ``prepare_network()``
+2. ``analyze_network()``
+3. ``solve_network()``
 """
 
 import numpy as np
 import astropy.stats
+from scipy.optimize import basinhopping
 
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
@@ -56,7 +63,7 @@ def prepare_network(session, bandpass):
             session.add(edge)
 
 
-def compute_network(session, bandpass, prior_zp_delta_key='zp_offset'):
+def analyze_network(session, bandpass, prior_zp_delta_key='zp_offset'):
     """Compute zeropoint offsets for all pairs of fields (edges in the graph).
 
     .. todo:: Add a way to paginating so multiple processors can work on
@@ -92,9 +99,118 @@ def compute_network(session, bandpass, prior_zp_delta_key='zp_offset'):
         edge.delta_err = float(delta_err)
 
 
-def compute_zp_delta(session, edge, from_prior_zp, to_prior_zp):
+def solve_network(session, bandpass, prior_zp_delta_key='zp_offset'):
+    """Solve for ZP offsets to unify the photometry, respecting the
+    zeropoint calibration of designated reference frames.
+
+    The computed zeropoints are embedded in the each catalog's `intercal.zp`
+    and `intercal.zp_err` metadata fields. The zeropoints are intended to
+    be total, taking into account the prior_zp_delta_key field.
+    """
+    # Prepare the objective function
+    q = session.query(IntercalEdge.from_id, IntercalEdge.to_id,
+                      IntercalEdge.delta, IntercalEdge.delta_err).\
+        filter(IntercalEdge.bandpass_id == bandpass.id)
+    dt = [('from_id', int), ('to_id', int), ('delta', float),
+          ('delta_err', float)]
+    network = np.array(q.all(), dtype=np.dtype(dt))
+    catalog_ids = np.unique(
+        np.concatenate((network['from_id'], network['to_id']))).tolist()
+    obj = Objective(catalog_ids, network)
+
+    # Run the optimization
+    z0 = 0.2 * np.random.randn(len(catalog_ids))
+    result = basinhopping(obj, z0,
+                          niter=100,
+                          T=1.0e8,
+                          stepsize=0.1,
+                          minimizer_kwargs={'method': 'Nelder-Mead',
+                                            'options': {'disp': True,
+                                                        'maxiter': 1e9,
+                                                        'maxfev': 1e6}},
+                          take_step=None,
+                          accept_test=None,
+                          callback=None,
+                          interval=10,  # rate at auto-updating stepsize
+                          disp=True,
+                          niter_success=None)
+    # TODO change these to log statements
+    print "RESULT MESSAGE", result.message
+    print "RESULT NITER", result.nit
+    print "RESULT FUNC", result.fun
+    print "RESULT X", result.x
+    zeropoints = result.x
+
+    # Add the prior ZP to this result
+    # and also get the list of zeropoint reference catalogs
+    reference_catalog_ids = []
+    reference_priors = []
+    reference_solved_zps = []
+    for i, catalog_id in enumerate(catalog_ids):
+        result = session.query(Catalog.meta).\
+            filter(Catalog.id == catalog_id).\
+            one()
+        meta = result.meta
+        print catalog_id, meta
+
+        try:
+            prior_zp = meta[prior_zp_delta_key][str(bandpass.id)]['zp_delta']
+        except:
+            prior_zp = 0.
+        print "prior_zp", prior_zp
+        zeropoints[i] += prior_zp
+
+        try:
+            if meta['intercal_reference'] == True:
+                print "Found intercal_reference"
+                reference_catalog_ids.append(catalog_id)
+                reference_priors.append(prior_zp)  # from prev try
+                reference_solved_zps.append(zeropoints[i])
+        except:
+            pass
+
+    print "reference_catalog_ids", reference_catalog_ids
+    print "reference_priors", reference_priors
+    print "reference_solved_zps", reference_solved_zps
+
+    # Fit a zp normalization so that the ZP of the reference fields matches
+    # that of the prior zp
+    reference_priors = np.array(reference_priors)
+    reference_solved_zps = np.array(reference_solved_zps)
+    diff = reference_priors - reference_solved_zps
+    corr = np.mean(diff)
+    # FIXME Is this the right way to assess normalization uncertainty?
+    # if len(diff) >= 5:
+    #     corr_err = np.std(diff)
+    # else:
+    #     corr_err = 0.
+    # Finally, normalize zeropoints
+    zeropoints += corr
+
+    print 'ZEROPOINTS', zeropoints
+    print 'Correction', corr
+    print 'Correction scatter', diff.std()
+    print 'diffs', diff
+    # Persist the intercal zeropoint to the Catalog's metadata
+    for catalog_id, z in zip(catalog_ids, zeropoints):
+        catalog = session.query(Catalog).\
+            filter(Catalog.id == catalog_id).\
+            one()
+        meta = catalog.meta
+        if 'intercal' not in meta:
+            meta['intercal'] = {}
+        meta['intercal'][str(bandpass.id)] = {"zp": float(z),
+                                              "err": float(0.)}  # FIXME
+        print meta
+        catalog.meta = meta
+        session.query(Catalog).\
+            filter(Catalog.id == catalog_id).\
+            update('meta', meta)
+
+
+def _compute_zp_delta(session, edge, from_prior_zp, to_prior_zp):
     """Compute photometric zeropoint difference between two catalogs."""
-    phot = xmatch(session, edge)
+    phot = _xmatch(session, edge)
 
     # Apply prior ZP offsets
     phot['from_mag'] += from_prior_zp
@@ -110,7 +226,7 @@ def compute_zp_delta(session, edge, from_prior_zp, to_prior_zp):
                     & (np.isfinite(filtered_delta_err) == True))[0]
     filtered_delta = filtered_delta[good]
     filtered_delta_err = filtered_delta_err[good]
-    mean = weighted_mean(filtered_delta, filtered_delta_err)
+    mean = _weighted_mean(filtered_delta, filtered_delta_err)
 
     # Do a bootstrap uncertainty analysis
     means = []
@@ -118,17 +234,17 @@ def compute_zp_delta(session, edge, from_prior_zp, to_prior_zp):
         idx = np.random.randint(low=0,
                                 high=filtered_delta.shape[0] - 1,
                                 size=delta.shape)
-        m = weighted_mean(filtered_delta[idx], filtered_delta_err[idx])
+        m = _weighted_mean(filtered_delta[idx], filtered_delta_err[idx])
         means.append(m)
     return mean, np.std(np.array(means))
 
 
-def weighted_mean(delta, delta_err):
+def _weighted_mean(delta, delta_err):
     mean = np.average(delta, weights=1. / delta_err ** 2.)
     return mean
 
 
-def xmatch(session, edge):
+def _xmatch(session, edge):
     """Join photometric measurements of two overlapping catalogs in the
     given bandpass.
     """
@@ -141,7 +257,7 @@ def xmatch(session, edge):
     from_bp = aliased(Bandpass)
     to_bp = aliased(Bandpass)
 
-    overlap_polygon = make_q3c_polygon(get_overlap_polygon(session, edge))
+    overlap_polygon = _make_q3c_polygon(_get_overlap_polygon(session, edge))
     q = session.query(from_obs.mag,
                       from_obs.mag_err,
                       to_obs.mag,
@@ -172,7 +288,7 @@ def xmatch(session, edge):
     return data
 
 
-def get_overlap_polygon(session, edge):
+def _get_overlap_polygon(session, edge):
     """Get polygon of the overlap area of this graph edge."""
     principal_catalog = session.query(Catalog).\
         filter(Catalog.id == edge.from_id).\
@@ -186,8 +302,26 @@ def get_overlap_polygon(session, edge):
     return poly
 
 
-def make_q3c_polygon(poly):
+def _make_q3c_polygon(poly):
     """Make a polygon in q3c (flattened) list format."""
-    # TODO refactor this into starplex
     q3cpoly = poly.flatten().tolist()
     return q3cpoly
+
+
+class Objective(object):
+    """Inter-field zeropoint objective function."""
+    def __init__(self, catalog_ids, network):
+        super(Objective, self).__init__()
+        self._net = network
+        self._n_edges = len(self._net)
+        self._hash = dict(zip(catalog_ids, range(len(catalog_ids))))
+
+    def __call__(self, z):
+        """Objective function call."""
+        F = 0.
+        for k in xrange(self._n_edges):
+            i = self._hash[self._net[k]['from_id']]
+            j = self._hash[self._net[k]['to_id']]
+            F += ((self._net[k]['delta'] + z[i] - z[j])
+                  / self._net[k]['delta_err'] ** 2) ** 2.
+        return F
