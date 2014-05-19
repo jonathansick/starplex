@@ -4,6 +4,9 @@
 Pipeline for computing inter-catalog zeropoint calibrations by minimizing
 field-to-field zeropoint differences.
 
+First, set which fields should be treated as having 'true' (trusted)
+zeropoints using the ``set_zeropoint_reference()`` function.
+
 The pipeline is run with three successive functions
 
 1. ``prepare_network()``
@@ -21,6 +24,38 @@ from geoalchemy2.shape import to_shape
 
 from .database import Catalog, CatalogStar, Bandpass, Observation, IntercalEdge
 from .database import CatalogOverlaps
+
+
+def set_zeropoint_reference(session, catalog_name, instrument):
+    """Set this field as a zeropoint reference so that solved zeropoints
+    will be normalized against this field (and other reference fields).
+    """
+    catalog = session.query(Catalog).\
+        filter(Catalog.name == catalog_name).\
+        filter(Catalog.instrument == instrument).\
+        one()
+    meta = catalog.meta
+    meta['intercal_reference'] = True
+    catalog.meta = meta
+    session.query(Catalog).\
+        filter(Catalog.name == catalog_name).\
+        filter(Catalog.instrument == instrument).\
+        update({'meta': meta})
+
+
+def unset_zeropoint_reference(session, catalog_name, instrument):
+    """Revoke this catalog's status as a zeropoint reference."""
+    catalog = session.query(Catalog).\
+        filter(Catalog.name == catalog_name).\
+        filter(Catalog.instrument == instrument).\
+        one()
+    meta = catalog.meta
+    meta['intercal_reference'] = False
+    catalog.meta = meta
+    session.query(Catalog).\
+        filter(Catalog.name == catalog_name).\
+        filter(Catalog.instrument == instrument).\
+        update({'meta': meta})
 
 
 def prepare_network(session, bandpass):
