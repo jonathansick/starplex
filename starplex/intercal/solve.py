@@ -9,9 +9,11 @@ import numpy as np
 from scipy.optimize import basinhopping
 
 from ..database import Catalog, IntercalEdge
+from .cyobj import IntercalObjective
 
 
-def solve_network(session, bandpass, prior_zp_delta_key='zp_offset'):
+def solve_network(session, bandpass, prior_zp_delta_key='zp_offset',
+                  use_cython=True):
     """Solve for ZP offsets to unify the photometry, respecting the
     zeropoint calibration of designated reference frames.
 
@@ -28,7 +30,13 @@ def solve_network(session, bandpass, prior_zp_delta_key='zp_offset'):
     network = np.array(q.all(), dtype=np.dtype(dt))
     catalog_ids = np.unique(
         np.concatenate((network['from_id'], network['to_id']))).tolist()
-    obj = Objective(catalog_ids, network)
+
+    if use_cython:
+        # Cython version
+        obj = _prep_cy_objective(catalog_ids, network)
+    else:
+        # Python version
+        obj = Objective(catalog_ids, network)
 
     # Run the optimization
     z0 = 0.2 * np.random.randn(len(catalog_ids))
@@ -118,6 +126,25 @@ def solve_network(session, bandpass, prior_zp_delta_key='zp_offset'):
         session.query(Catalog).\
             filter(Catalog.id == catalog_id).\
             update('meta', meta)
+
+
+def _prep_cy_objective(catalog_ids, network):
+    """Constructs the cython objective function."""
+    n_terms = network.shape[0]
+    # Translates catalog id to index in the parameter space of objective func
+    h = dict(zip(catalog_ids, range(len(catalog_ids))))
+    from_index = np.empty(n_terms, dtype=int)
+    to_index = np.empty(n_terms, dtype=int)
+    delta = np.empty(n_terms, dtype=float)
+    weight = np.empty(n_terms, dtype=float)
+    for i in xrange(n_terms):
+        from_index[i] = h[network[i]['from_id']]
+        to_index[i] = h[network[i]['to_id']]
+        delta[i] = network[i]['delta']
+        weight[i] = 1. / network[i]['delta_err'] ** 2.
+
+    objf = IntercalObjective(from_index, to_index, delta, weight, n_terms)
+    return objf
 
 
 class Objective(object):
