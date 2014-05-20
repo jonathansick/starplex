@@ -125,7 +125,7 @@ def solve_network(session, bandpass, prior_zp_delta_key='zp_offset',
         catalog.meta = meta
         session.query(Catalog).\
             filter(Catalog.id == catalog_id).\
-            update('meta', meta)
+            update({'meta', meta})
 
 
 def _prep_cy_objective(catalog_ids, network):
