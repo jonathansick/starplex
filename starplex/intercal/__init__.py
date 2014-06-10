@@ -12,9 +12,12 @@ The pipeline is run with three successive functions
 1. ``prepare_network()``
 2. ``analyze_network()``
 3. ``solve_network()``
+
+If there are isolated fields that are not part of the network, run
+``copy_prior_of_unattached`` as well.
 """
 
 from .refmanager import set_zeropoint_reference, unset_zeropoint_reference
 from .prep import prepare_network
 from .analyze import analyze_network
-from .solve import solve_network
+from .solve import solve_network, copy_prior_of_unattached

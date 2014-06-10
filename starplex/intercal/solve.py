@@ -8,8 +8,53 @@ Solve the network of inter-field zeropoint differences.
 import numpy as np
 from scipy.optimize import basinhopping
 
-from ..database import Catalog, IntercalEdge
+from ..database import Catalog, IntercalEdge, CatalogStar, Observation
 from .cyobj import IntercalObjective
+
+
+def copy_prior_of_unattached(session, bandpass,
+                             prior_zp_delta_key='zp_offset'):
+    """Helper function to copy the prior ZP offset metadata as the de-factor
+    `intercal` zeropoint offset for fields that are not attached to the network
+    and thus could not be solved.
+    """
+    # Hacky way to get set of catalogs not in the network edge set.
+    # TODO refactor this into a single SQL query
+    q = session.query(IntercalEdge.from_id, IntercalEdge.to_id,
+                      IntercalEdge.delta, IntercalEdge.delta_err).\
+        filter(IntercalEdge.bandpass_id == bandpass.id)
+    dt = [('from_id', int), ('to_id', int), ('delta', float),
+          ('delta_err', float)]
+    network = np.array(q.all(), dtype=np.dtype(dt))
+    networked_catalog_ids = np.unique(
+        np.concatenate((network['from_id'], network['to_id']))).tolist()
+    all_catalog_ids = np.array(session.query(Catalog.id).
+        join(CatalogStar).
+        join(Observation).
+        filter(Observation.bandpass == bandpass).
+        group_by(Catalog.id).
+        all())
+    isolated_catalog_ids = np.setdiff1d(all_catalog_ids,
+                                        networked_catalog_ids,
+                                        assume_unique=False)
+    for catalog_id in isolated_catalog_ids:
+        catalog = session.query(Catalog).\
+            filter(Catalog.id == int(catalog_id)).one()
+        print "Updating intercal zp for isolated catalog", catalog
+        meta = catalog.meta
+        try:
+            prior_zp = meta[prior_zp_delta_key][str(bandpass.id)]['zp_delta']
+        except:
+            prior_zp = 0.
+
+        if 'intercal' not in meta:
+            meta['intercal'] = {}
+        meta['intercal'][str(bandpass.id)] = {"zp": float(prior_zp),
+                                              "err": float(0.)}  # FIXME
+        catalog.meta = meta
+        session.query(Catalog).\
+            filter(Catalog.id == catalog_id).\
+            update({'meta', meta})
 
 
 def solve_network(session, bandpass, prior_zp_delta_key='zp_offset',
