@@ -14,6 +14,7 @@ from geoalchemy2.shape import to_shape
 from ..database import Catalog, CatalogStar, Bandpass, Observation
 from ..database import IntercalEdge
 from ..database import CatalogOverlaps
+from ..utils.timer import Timer
 
 
 def analyze_network(session, bandpass, prior_zp_delta_key='zp_offset'):
@@ -26,10 +27,12 @@ def analyze_network(session, bandpass, prior_zp_delta_key='zp_offset'):
     to_cat = aliased(Catalog)
     q = session.query(IntercalEdge, from_cat, to_cat).\
         join(from_cat, IntercalEdge.from_id == from_cat.id).\
-        join(to_cat, IntercalEdge.to_id == to_cat.id)
+        join(to_cat, IntercalEdge.to_id == to_cat.id).\
+        filter(IntercalEdge.bandpass_id == bandpass.id)
     for edge, from_cat, to_cat in q:
         from_meta = from_cat.meta
         to_meta = to_cat.meta
+        print "Edge %i" % edge.id
         # Get prior zp correction estimates
         try:
             from_prior_zp \
@@ -59,14 +62,15 @@ def analyze_network(session, bandpass, prior_zp_delta_key='zp_offset'):
 
 def _compute_zp_delta(session, edge, from_prior_zp, to_prior_zp):
     """Compute photometric zeropoint difference between two catalogs."""
-    phot = _xmatch(session, edge)
+    with Timer() as timer:
+        phot = _xmatch(session, edge)
+    print "Matched in {0:.1f} minutes".format(timer.interval / 60.)
 
     # Apply prior ZP offsets
     phot['from_mag'] += from_prior_zp
     phot['to_mag'] += to_prior_zp
 
     # Compute zeropoint shift
-    print "Edge id", edge.id
     delta = phot['from_mag'] - phot['to_mag']
     print "Number of diffs:", len(delta)
     if len(delta) < 5:
