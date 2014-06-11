@@ -44,8 +44,13 @@ def analyze_network(session, bandpass, prior_zp_delta_key='zp_offset'):
         except:
             to_prior_zp = 0.
         print "Prior ZPs: %.2e %.2e" % (from_prior_zp, to_prior_zp)
-        delta, delta_err = _compute_zp_delta(session, edge,
-                                             from_prior_zp, to_prior_zp)
+        try:
+            delta, delta_err = _compute_zp_delta(session, edge,
+                                                 from_prior_zp, to_prior_zp)
+        except NoOverlappingStars:
+            # This edge is useless, so delete it
+            session.delete(edge)
+            continue
         print "Deltas", delta, delta_err
         # Update the edge
         edge.delta = float(delta)
@@ -61,10 +66,17 @@ def _compute_zp_delta(session, edge, from_prior_zp, to_prior_zp):
     phot['to_mag'] += to_prior_zp
 
     # Compute zeropoint shift
+    print "Edge id", edge.id
     delta = phot['from_mag'] - phot['to_mag']
+    print "Number of diffs:", len(delta)
+    if len(delta) < 5:
+        raise NoOverlappingStars
     delta_err = np.hypot(phot['from_mag_err'], phot['to_mag_err'])
     filtered_phot = astropy.stats.funcs.sigma_clip(delta, sig=3)
     filtered_delta = filtered_phot.data[~filtered_phot.mask]
+    print "Number of filtered diffs", len(filtered_delta)
+    if len(filtered_delta) < 5:
+        raise NoOverlappingStars
     filtered_delta_err = delta_err[~filtered_phot.mask]
     good = np.where((np.isfinite(filtered_delta) == True)
                     & (np.isfinite(filtered_delta_err) == True))[0]
@@ -81,6 +93,10 @@ def _compute_zp_delta(session, edge, from_prior_zp, to_prior_zp):
         m = _weighted_mean(filtered_delta[idx], filtered_delta_err[idx])
         means.append(m)
     return mean, np.std(np.array(means))
+
+
+class NoOverlappingStars(BaseException):
+    pass
 
 
 def _weighted_mean(delta, delta_err):
