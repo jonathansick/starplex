@@ -172,6 +172,37 @@ This can be accomplished with the following script:
 A lot of the query magic here revolves around grabbing two rows from the ``Observation`` table corresponding to the F606W and F814W magnitudes of stars.
 Since we need to join to the ``Observation`` and ``Bandpass`` tables twice, we create aliases to declare when we're talking to those tables in the context of either the F606W or F814W bandpasses.
 
+Finding Catalogs Containing a Coordinate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Suppose you want to know what observational catalogs cover a coordinate.
+The ``catalog`` table has a ``footprint`` column that lets us easily perform coverage queries.
+
+.. code:: python
+
+    from starplex.database import connect_to_server, Session
+    from starplex.database import Catalog, Bandpass, CatalogStar, Observation
+    from starplex.database.meta import point_str
+
+    connect_to_server('marvin', echo=True)
+    session = Session()
+
+    # define a coordinate to test catalog coverage
+    coord = SkyCoord(9.38891666667 * u.deg, 40.0101944444 * u.deg)
+    # convert the coordinate to a WKT form for PostGIS
+    point = point_str(coord.ra.deg, coord.dec.deg)
+
+    # Use the ST_Contains PostGIS function to test if a footprint contains the point
+    # Note that Starplex uses Geography-type columns, but PostGIS/geoalchemy2 prefer geometry types
+    q = session.query(Catalog)\
+        .filter(func.ST_Contains(func.Geometry(Catalog.footprint),
+                                 func.Geometry(func.ST_GeographyFromText(point))))
+    for c in q:
+        print c.name
+
+    session.close()
+
+
 About
 -----
 
@@ -180,4 +211,4 @@ While it is made available, we express no guarantee of fitness for your applicat
 We also cannot guarantee that API or schema-breaking changes will not be made.
 If you make use of this code in your research, send a note to `@jonathansick <https://twitter.com/jonathansick>`_ on Twitter.
 
-Copyright 2014 Jonathan Sick. BSD Licensed.
+Copyright 2015 Jonathan Sick. BSD Licensed.
