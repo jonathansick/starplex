@@ -154,7 +154,7 @@ This can be accomplished with the following script:
     bp814 = aliased(Bandpass)
     fieldname = "disk"
     q = session.query(CatalogStar.ra, CatalogStar.dec,
-                CatalogStar.cfrac, mag606obs.mag, mag814obs.mag)\
+                      CatalogStar.cfrac, mag606obs.mag, mag814obs.mag)\
             .join(mag606obs, CatalogStar.observations)\
             .join(mag814obs, CatalogStar.observations)\
             .join(Catalog)\
@@ -192,11 +192,12 @@ The ``catalog`` table has a ``footprint`` column that lets us easily perform cov
     # convert the coordinate to a WKT form for PostGIS
     point = point_str(coord.ra.deg, coord.dec.deg)
 
-    # Use the ST_Contains PostGIS function to test if a footprint contains the point
-    # Note that Starplex uses Geography-type columns, but PostGIS/geoalchemy2 prefer geometry types
+    # Use the ST_Intersects to use to coverage testing for geography
+    # data types.
     q = session.query(Catalog)\
-        .filter(func.ST_Contains(func.Geometry(Catalog.footprint),
-                                 func.Geometry(func.ST_GeographyFromText(point))))
+        .filter(func.ST_Intersects(
+            func.Geometry(Catalog.footprint),
+            func.Geometry(func.ST_GeographyFromText(point))))
     for c in q:
         print c.name
 
