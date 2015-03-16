@@ -112,6 +112,8 @@ class CatalogStar(Base):
     observations = relationship("Observation", backref="catalog_star",
             passive_deletes=True)
 
+    meta = Column(MutableDict.as_mutable(JSON), default={})
+
     def __init__(self, x, y, ra, dec, cfrac):
         self.x = x
         self.y = y
@@ -139,6 +141,8 @@ class Observation(Base):
 
     catalog_star_id = Column(Integer,
             ForeignKey('catalog_star.id', ondelete="CASCADE"))
+
+    meta = Column(MutableDict.as_mutable(JSON), default={})
 
     def __init__(self, mag, mag_err):
         self.mag = mag
