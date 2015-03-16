@@ -11,7 +11,7 @@ that overlap a specific Catalog.
 from sqlalchemy import func, not_
 
 from ..observation import Catalog
-from .gistools import sq_meter_to_sq_degree
+# from .gistools import sq_meter_to_sq_degree
 
 
 class OverlapBase(object):
@@ -30,7 +30,7 @@ class OverlapBase(object):
         self._overlapping_catalogs = self.query.all()
         self._clips = None
         self._areas = None
-        
+
     @property
     def count(self):
         """Number of overlaps"""
@@ -49,7 +49,7 @@ class OverlapBase(object):
     def clips(self):
         """Polygons representing the intersecting areas between the principal
         catalog and all overlapping catalogs.
-        
+
         Returns a list of tuples of :class:``WKBElement`` for each
         intersection, corresponding to the list of overlapping catalogs.
         That is, each overlap has a tuple of :class:``WKBElement`` since
@@ -110,7 +110,7 @@ class FootprintOverlaps(OverlapBase):
     The query can be customized by chaining to the ``query`` attributed. e.g.
 
        footprint_overlaps.query.filter(Catalog.instrument == my_instrument)
-    
+
     Parameters
     ----------
     session :
@@ -144,7 +144,7 @@ class CatalogOverlaps(OverlapBase):
     The query can be customized by chaining to the ``query`` attributed. e.g.
 
        catalog_overlaps.query.filter(Catalog.instrument == my_instrument)
-    
+
     Parameters
     ----------
     session :

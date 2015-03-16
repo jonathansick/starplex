@@ -43,7 +43,7 @@ def connect_to_server(server_name, **kwargs):
 
 
 def connect(host="localhost", port=5432, user=None, name=None, password=None,
-        **kwargs):
+            **kwargs):
     """Establish a connection to the Postgres database.
 
     After running :func:`connect`, sessions can be established.
@@ -77,11 +77,11 @@ def connect(host="localhost", port=5432, user=None, name=None, password=None,
 def _build_url(host, port, name, user, password):
     """Construct the Postgres connection URL"""
     if password is not None:
-        return "postgresql+psycopg2://%s:%s@%s:%i/%s" \
-                % (user, password, host, port, name)
+        return "postgresql+psycopg2://{0}:{1}@{2}:{3:d}/{4}".format(
+            user, password, host, port, name)
     else:
-        return "postgresql+psycopg2://%s@%s:%i/%s" \
-                % (user, host, port, name)
+        return "postgresql+psycopg2://{0}@{1}:{2:d}/{3}".format(
+            user, host, port, name)
 
 
 def drop_all():
@@ -95,7 +95,7 @@ def drop_all():
 
 def create_all():
     """Create all tables.
-    
+
     Needs a connection to already be established with :func:`connect`.
     """
     Base.metadata.create_all()
@@ -118,6 +118,8 @@ def commit_on_success(fn, *arg, **kw):
 # NOTE, use this to enable the References mixin in schema.py
 # class Base(References):
 #     pass
+
+
 class Base(object):
     pass
 
@@ -126,9 +128,9 @@ Base = declarative_base(cls=Base)
 
 # establish a constraint naming convention.
 # see http://jsick.net/RicYJE
-Base.metadata.naming_convention={
-        "pk": "pk_%(table_name)s",
-        "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-        "uq": "uq_%(table_name)s_%(column_0_name)s",
-        "ix": "ix_%(table_name)s_%(column_0_name)s"
-    }
+Base.metadata.naming_convention = {
+    "pk": "pk_%(table_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ix": "ix_%(table_name)s_%(column_0_name)s"
+}

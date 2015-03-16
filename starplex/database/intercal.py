@@ -25,7 +25,7 @@ class IntercalEdge(UniqueMixin, Base):
     from_id = Column(Integer,
                      ForeignKey('catalog.id', ondelete='CASCADE'))
     to_id = Column(Integer,
-                    ForeignKey('catalog.id', ondelete='CASCADE'))
+                   ForeignKey('catalog.id', ondelete='CASCADE'))
     bandpass_id = Column(Integer,
                          ForeignKey('bandpass.id', ondelete='CASCADE'))
     delta = Column(Float)
@@ -53,9 +53,9 @@ class IntercalEdge(UniqueMixin, Base):
                       from_catalog, to_catalog, bandpass, delta, delta_err):
         from_cat = aliased(Catalog)
         to_cat = aliased(Catalog)
-        return query.filter(from_cat.id == from_catalog.id).\
-            filter(to_cat.id == to_catalog.id).\
-            filter(Bandpass.id == bandpass.id)
+        return query.filter(from_cat.id == from_catalog.id)\
+            .filter(to_cat.id == to_catalog.id)\
+            .filter(Bandpass.id == bandpass.id)
 
     def __repr__(self):
         return "<IntercalEdge(%i)>" % self.id
@@ -63,18 +63,18 @@ class IntercalEdge(UniqueMixin, Base):
     @staticmethod
     def edge_exists(session, from_catalog, to_catalog, bandpass):
         """Return True if this edge, or its reverse, exists."""
-        q1 = session.query(IntercalEdge).\
-            filter(IntercalEdge.from_id == from_catalog.id).\
-            filter(IntercalEdge.to_id == to_catalog.id).\
-            filter(IntercalEdge.bandpass_id == bandpass.id)
+        q1 = session.query(IntercalEdge)\
+            .filter(IntercalEdge.from_id == from_catalog.id)\
+            .filter(IntercalEdge.to_id == to_catalog.id)\
+            .filter(IntercalEdge.bandpass_id == bandpass.id)
         if q1.count() > 0:
             return True
 
         # search for reverse edge
-        q2 = session.query(IntercalEdge).\
-            filter(IntercalEdge.from_id == to_catalog.id).\
-            filter(IntercalEdge.to_id == from_catalog.id).\
-            filter(IntercalEdge.bandpass_id == bandpass.id)
+        q2 = session.query(IntercalEdge)\
+            .filter(IntercalEdge.from_id == to_catalog.id)\
+            .filter(IntercalEdge.to_id == from_catalog.id)\
+            .filter(IntercalEdge.bandpass_id == bandpass.id)
         if q2.count() > 0:
             return True
 

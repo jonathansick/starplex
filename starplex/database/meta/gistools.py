@@ -25,7 +25,7 @@ def degree_to_meter(d):
 
 def point_str(ra, dec):
     """Convert an (RA,Dec) point into a PostGIS POINT definition (a ``str``).
-    
+
     Parameters
     ----------
     ra : float
@@ -44,7 +44,7 @@ def multipolygon_str(*polygons):
     is the same as the last).
 
     e.g.::
-    
+
         MULTIPOLYGON(((2.25 0,1.25 1,1.25 -1,2.25 0)),
         ((1 -1,1 1,0 0,1 -1)))
     """

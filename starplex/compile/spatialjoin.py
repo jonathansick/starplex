@@ -23,7 +23,7 @@ class SpatialJoiner(object):
         seed_star_table(self._s, catalog, reset=reset)
 
     def accrete_catalogs(self, r_tol, bandpass, instrument=None,
-            no_new=False):
+                         no_new=False):
         """Accrete observational catalogs onto the star catalog given
         the query constraints on the catalogs to add.
 
@@ -47,10 +47,10 @@ class SpatialJoiner(object):
             catalogs = compiled_catalogs(self._s)
             footprint = compiled_footprint(self._s, catalogs)
             log.info("Accreted catalogs:\n{}".
-                    format([str(c) for c in catalogs]))
+                     format([str(c) for c in catalogs]))
             log.info("Total footprint {}".format(str(footprint)))
             overlaps = FootprintOverlaps(self._s, footprint,
-                    exclude=catalogs)
+                                         exclude=catalogs)
             if instrument is not None:
                 overlaps.query.filter(Catalog.instrument == instrument)
             if overlaps.count == 0:
@@ -58,14 +58,14 @@ class SpatialJoiner(object):
             next_catalog = overlaps.largest_overlapping_catalog
             log.info("Ingesting: {}".format(str(next_catalog)))
             self.join_catalog(next_catalog, r_tol, bandpass,
-                    no_new=no_new)
+                              no_new=no_new)
 
     def join_catalog(self, catalog, r_tol, bandpass, no_new=False):
         """Join a specific observational catalog to the Star table.
-        
+
         Parameters
         ----------
-        catalog : 
+        catalog : :class:`starplex.database.models.Catalog`
             The :class:`starplex.database.models.Catalog` to join to the
             `Star` table.
         r_tol : float
@@ -84,18 +84,17 @@ class SpatialJoiner(object):
         new_count = 0
         # Query catalog stars for this catalog, ordering brightnest to
         # faintest; that are not in the Star table already
-        cstar_query = self._s.query(CatalogStar).\
-            join(Observation, Observation.catalogstar_id == CatalogStar.id).\
-            filter(CatalogStar.catalog == catalog).\
-            filter(CatalogStar.star == None).\
-            order_by(Observation.mag.desc())
+        cstar_query = self._s.query(CatalogStar)\
+            .join(Observation, Observation.catalogstar_id == CatalogStar.id)\
+            .filter(CatalogStar.catalog == catalog)\
+            .filter(CatalogStar.star == None)\
+            .order_by(Observation.mag.desc())
         log.debug("cstar_query.count {0:d}".format(cstar_query.count()))
         for i, cstar in enumerate(cstar_query):
             # FIXME returns too many stars
-            q = self._s.query(Star).\
-                    filter(cstar.coord.ST_DWithin(
-                        Star.coord, r_tol_m, False)).\
-                    order_by(cstar.coord.ST_Distance(Star.coord))
+            q = self._s.query(Star)\
+                .filter(cstar.coord.ST_DWithin(Star.coord, r_tol_m, False))\
+                .order_by(cstar.coord.ST_Distance(Star.coord))
             _ingested = False
             if i % 100 == 0:
                 log.debug("{0:d}, {1:d}".format(i, q.count()))
@@ -103,18 +102,17 @@ class SpatialJoiner(object):
                 for matched_star in q:
                     # Check this star is not already included in this catalog
                     # FIXME this query seems wrong?
-                    star_catalogs_q = self._s.query(Catalog.id).\
-                            join(CatalogStar,
-                                    CatalogStar.catalog_id == Catalog.id).\
-                            join(Star,
-                                    Star.id == CatalogStar.star_id).\
-                            filter(matched_star.id == Star.id)
+                    star_catalogs_q = self._s.query(Catalog.id)\
+                        .join(CatalogStar,
+                              CatalogStar.catalog_id == Catalog.id)\
+                        .join(Star, Star.id == CatalogStar.star_id)\
+                        .filter(matched_star.id == Star.id)
                     # unpack to a list of Catalog ids
                     catalog_ids = [x[0] for x in star_catalogs_q.all()]
                     if i % 100 == 0:
                         log.debug("\t{}".format(str(matched_star)))
                         log.debug("\tcount of member catalogs: {0:d}".
-                                format(star_catalogs_q.count()))
+                                  format(star_catalogs_q.count()))
                         log.debug("\t{}".format(str(catalog_ids)))
                     if cstar.catalog_id not in catalog_ids:
                         # This star can be joined
@@ -122,13 +120,12 @@ class SpatialJoiner(object):
                         matched_count += 1
                         _ingested = True
                         break
-            if _ingested == False and not no_new:
+            if _ingested is False and not no_new:
                 # No match; add this star directly
                 self._add_new_star(cstar)
                 new_count += 1
             if i % 100 == 0:
                 log.debug("\tmatched %i new %i" % (matched_count, new_count))
-
 
     def _add_to_star(self, catalog_star, matched_star):
         """Add an observed catalog star to the matched star in the Star table.

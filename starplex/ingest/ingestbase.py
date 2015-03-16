@@ -12,12 +12,12 @@ from sqlalchemy.sql import func, select
 from sqlalchemy import Integer
 
 from ..database import Catalog, CatalogStar, Observation, Bandpass
-from ..database.meta import point_str
+# from ..database.meta import point_str
 
 
 def catalog_exists(session, name, instrument):
     """Check if an observational Catalog is already ingested.
-    
+
     Parameters
     ----------
     session : ``Session``
@@ -32,10 +32,10 @@ def catalog_exists(session, name, instrument):
     exists : bool
         True if the catalog already exists, False otherwise.
     """
-    count = session.query(Catalog).\
-            filter(Catalog.name == name).\
-            filter(Catalog.instrument == instrument).\
-            count()
+    count = session.query(Catalog)\
+        .filter(Catalog.name == name)\
+        .filter(Catalog.instrument == instrument)\
+        .count()
     if count == 0:
         return False
     else:
@@ -43,7 +43,7 @@ def catalog_exists(session, name, instrument):
 
 
 def init_catalog(session, name, instrument, band_names, band_system,
-        footprint_polys=None, meta=None):
+                 footprint_polys=None, meta=None):
     """Insert a new observational catalog. Follow this up with
     insert_observations.
 
@@ -68,7 +68,7 @@ def init_catalog(session, name, instrument, band_names, band_system,
         meta = {}
     # Pre-insert the catalog and bandpass
     catalog = Catalog.as_unique(session, name, instrument,
-        footprints=footprint_polys, **meta)
+                                footprints=footprint_polys, **meta)
     session.add(catalog)
     # Ensure the bandpass exists
     for n in band_names:
@@ -78,7 +78,7 @@ def init_catalog(session, name, instrument, band_names, band_system,
 
 
 def add_observations(session, name, instrument, band_names, band_system,
-        x, y, ra, dec, mag, mag_err, cfrac):
+                     x, y, ra, dec, mag, mag_err, cfrac):
     """Insert and observational catalog (Catalog, CatalogStar and Observation
     tables) efficiently with SQLAlchemy Core.
 
@@ -126,13 +126,13 @@ def add_observations(session, name, instrument, band_names, band_system,
     assert n_stars == cfrac.shape[0]
 
     # Pre-fetch catalog ids and band ids
-    catalog_id = session.query(Catalog).\
-            filter(Catalog.name == name).\
-            filter(Catalog.instrument == instrument).one().id
-    band_ids = [session.query(Bandpass).
-            filter(Bandpass.name == n).
-            filter(Bandpass.system == band_system).one().id
-            for n in band_names]
+    catalog_id = session.query(Catalog)\
+        .filter(Catalog.name == name)\
+        .filter(Catalog.instrument == instrument).one().id
+    band_ids = [session.query(Bandpass)
+                .filter(Bandpass.name == n)
+                .filter(Bandpass.system == band_system).one().id
+                for n in band_names]
 
     # Counter, seeded with next CatalogStar id value
     id_star_0 = _max_id(session, CatalogStar.__table__)
@@ -143,18 +143,20 @@ def add_observations(session, name, instrument, band_names, band_system,
     for i, id_star in enumerate(
             xrange(id_star_0 + 1, id_star_0 + n_stars + 1)):
         cstars.append({"id": id_star,
-            "x": float(x[i]), "y": float(y[i]),
-            "ra": float(ra[i]), "dec": float(dec[i]),
-            "cfrac": float(cfrac[i]),
-            "catalog_id": catalog_id,
-            "star_id": None})
+                       "x": float(x[i]), "y": float(y[i]),
+                       "ra": float(ra[i]), "dec": float(dec[i]),
+                       "cfrac": float(cfrac[i]),
+                       "catalog_id": catalog_id,
+                       "star_id": None})
         for j, band_id in enumerate(band_ids):
             if np.isfinite(mag[i, j]):
                 # skip NaN values
                 id_obs += 1
                 obs_list.append({"id": id_obs,
-                    "catalog_star_id": id_star, "bandpass_id": band_id,
-                    "mag": float(mag[i, j]), "mag_err": float(mag_err[i, j])})
+                                 "catalog_star_id": id_star,
+                                 "bandpass_id": band_id,
+                                 "mag": float(mag[i, j]),
+                                 "mag_err": float(mag_err[i, j])})
         if i % 10 == 0:
             log.debug("Executing chunk")
             session.execute(CatalogStar.__table__.insert(), cstars)

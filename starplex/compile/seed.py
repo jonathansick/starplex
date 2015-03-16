@@ -12,8 +12,8 @@ def seed_star_table(session, obs_catalog, reset=False):
     if reset:
         reset_star_table(session, obs_catalog)
     q = session.query(CatalogStar)\
-            .filter(CatalogStar.catalog == obs_catalog)\
-            .filter(CatalogStar.star == None)
+        .filter(CatalogStar.catalog == obs_catalog)\
+        .filter(CatalogStar.star == None)  # NOQA FIXME conditional?
     for catalog_star in q:
         star = Star(catalog_star.coord)
         catalog_star.star = star
@@ -22,16 +22,8 @@ def seed_star_table(session, obs_catalog, reset=False):
 def reset_star_table(session, obs_catalog):
     """Delete existing stars."""
     q = session.query(CatalogStar)\
-            .filter(CatalogStar.catalog == obs_catalog)\
-            .filter(CatalogStar.star != None)
+        .filter(CatalogStar.catalog == obs_catalog)\
+        .filter(CatalogStar.star != None)  # NOQA FIXME conditional?
     for catalogstar in q:
         session.delete(catalogstar.star)
     session.query(Star).delete()
-
-
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()

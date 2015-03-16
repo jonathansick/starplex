@@ -14,9 +14,9 @@ def compiled_catalogs(session):
     """Returns a list of :class:``Catalog`` instances compiled into the
     ``Star`` table.
     """
-    q = session.query(Catalog).distinct().\
-            join(CatalogStar, CatalogStar.catalog_id == Catalog.id).\
-            filter(CatalogStar.star != None)
+    q = session.query(Catalog).distinct()\
+        .join(CatalogStar, CatalogStar.catalog_id == Catalog.id)\
+        .filter(CatalogStar.star != None)  # NOQA FIXME conditional?
     return q.all()
 
 
@@ -26,7 +26,6 @@ def compiled_footprint(session, catalogs):
         agg_footprint = catalogs[0].footprint
     else:
         agg_footprint = session.query(
-                func.ST_Union(
-                    *[catalog.footprint for catalog in catalogs])).\
-                one()[0]
+            func.ST_Union(*[catalog.footprint for catalog in catalogs]))\
+            .one()[0]
     return agg_footprint

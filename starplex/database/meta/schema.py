@@ -5,7 +5,7 @@ PyCon 2014, available at `<https://bitbucket.org/zzzeek/pycon2014_atmcraft>`_.
 """
 
 from sqlalchemy import Column, Table, DateTime, Integer
-from sqlalchemy import event  #, ForeignKeyConstraint
+from sqlalchemy import event  # ForeignKeyConstraint
 # from sqlalchemy.sql import functions
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
@@ -29,7 +29,7 @@ class SurrogatePK(object):
 
 #     @classmethod
 #     def __declare_first__(cls):
-#         """declarative hook called within the 'before_configure' mapper event."""
+#         """declarative hook called within the 'before_configure' mapper event."""  # NOQA
 #         for lcl, rmt in cls._to_ref:
 #             cls._decl_class_registry[lcl]._reference_table(
 #                     cls._decl_class_registry[rmt].__table__)
@@ -37,7 +37,7 @@ class SurrogatePK(object):
 
 #     @classmethod
 #     def _reference_table(cls, ref_table):
-#         """Create a foreign key reference from the local class to the given remote
+#         """Create a foreign key reference from the local class to the given remote  # NOQA
 #         table.
 
 #         Adds column references to the declarative class and adds a
@@ -71,6 +71,7 @@ def _default_utcnow(element, compiler, **kw):
     """
     return "utcnow()"
 
+
 @compiles(utcnow, 'postgresql')
 def _pg_utcnow(element, compiler, **kw):
     """Postgresql-specific compilation handler."""
@@ -85,12 +86,10 @@ def timestamp_cols(table, metadata):
     if metadata is Base.metadata:
         table.append_column(
             Column('created_at',
-                        DateTime(timezone=True),
-                        nullable=False, default=utcnow())
-        )
+                   DateTime(timezone=True),
+                   nullable=False, default=utcnow()))
         table.append_column(
             Column('updated_at',
-                        DateTime(timezone=True),
-                        nullable=False,
-                        default=utcnow(), onupdate=utcnow())
-        )
+                   DateTime(timezone=True),
+                   nullable=False,
+                   default=utcnow(), onupdate=utcnow()))

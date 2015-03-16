@@ -43,7 +43,7 @@ class Star(Base):
 
     # Relationship to magnitude with delete cascade
     magnitudes = relationship("Magnitude", backref="star",
-        passive_deletes=True)
+                              passive_deletes=True)
 
     def __init__(self, ra, dec, ra_err, dec_err):
         self.ra = ra
@@ -68,10 +68,10 @@ class Magnitude(Base):
 
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
     bandpass = relationship("Bandpass",  # no need to backref
-            foreign_keys="[Magnitude.bandpass_id]")
+                            foreign_keys="[Magnitude.bandpass_id]")
 
     star_id = Column(Integer,
-            ForeignKey('star.id', ondelete="CASCADE"))
+                     ForeignKey('star.id', ondelete="CASCADE"))
 
     def __init__(self, mag, mag_err, bandpass, star):
         self.mag = mag

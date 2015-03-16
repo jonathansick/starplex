@@ -43,7 +43,7 @@ class Catalog(UniqueMixin, Base):
     meta = Column(MutableDict.as_mutable(JSON), default={})
 
     catalog_stars = relationship("CatalogStar", backref="catalog",
-            passive_deletes=True)
+                                 passive_deletes=True)
 
     def __init__(self, name, instrument, footprints=None, **metadata):
         self.name = name
@@ -74,14 +74,14 @@ class Catalog(UniqueMixin, Base):
         session.delete(self)
         session.commit()
         # Clean up any orphan CatalogStars
-        session.query(CatalogStar).\
-            filter(CatalogStar.catalog_id.is_(None)).\
-            delete(synchronize_session=False)
+        session.query(CatalogStar)\
+            .filter(CatalogStar.catalog_id.is_(None))\
+            .delete(synchronize_session=False)
         session.commit()
         # Clean up any orphan Observations
-        session.query(Observation).\
-            filter(Observation.catalog_star_id.is_(None)).\
-            delete(synchronize_session=False)
+        session.query(Observation)\
+            .filter(Observation.catalog_star_id.is_(None))\
+            .delete(synchronize_session=False)
         session.commit()
 
 
@@ -97,20 +97,20 @@ class CatalogStar(Base):
     ra = Column(Float)
     dec = Column(Float)
     cfrac = Column(Float)
-    
+
     # Reference catalog we belong to (Catalog defines relationship)
     catalog_id = Column(Integer,
-            ForeignKey('catalog.id', ondelete='CASCADE'))
+                        ForeignKey('catalog.id', ondelete='CASCADE'))
 
     # Reference the star we associate to
     star_id = Column(Integer, ForeignKey('star.id'))
     star = relationship("Star",
-            foreign_keys="[CatalogStar.star_id]",
-            backref=backref('catalog_stars', order_by=id))
+                        foreign_keys="[CatalogStar.star_id]",
+                        backref=backref('catalog_stars', order_by=id))
 
     # Relationship to Observation
     observations = relationship("Observation", backref="catalog_star",
-            passive_deletes=True)
+                                passive_deletes=True)
 
     meta = Column(MutableDict.as_mutable(JSON), default={})
 
@@ -137,10 +137,10 @@ class Observation(Base):
 
     bandpass_id = Column(Integer, ForeignKey('bandpass.id'))
     bandpass = relationship("Bandpass",
-            foreign_keys="[Observation.bandpass_id]")
+                            foreign_keys="[Observation.bandpass_id]")
 
     catalog_star_id = Column(Integer,
-            ForeignKey('catalog_star.id', ondelete="CASCADE"))
+                             ForeignKey('catalog_star.id', ondelete="CASCADE"))
 
     meta = Column(MutableDict.as_mutable(JSON), default={})
 

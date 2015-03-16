@@ -32,14 +32,14 @@ Functions
 
 import os
 import json
-import logging
+# import logging
 from astropy import log
 
 
 def read_settings(path=os.getenv('STARPLEXCONFIG',
-        os.path.expandvars('$HOME/.starplex.json'))):
+                  os.path.expandvars('$HOME/.starplex.json'))):
     """Read the Starplex JSON configurations file.
-    
+
     Parameters
     ----------
     path : str
@@ -61,7 +61,7 @@ def read_settings(path=os.getenv('STARPLEXCONFIG',
 
 def locate_server(servername):
     """Return connection parameters for a named server.
-    
+
     Parameters
     ----------
     servername : str

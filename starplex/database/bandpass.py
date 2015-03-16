@@ -23,12 +23,12 @@ class Bandpass(UniqueMixin, Base):
     @classmethod
     def unique_filter(cls, query, name, system):
         return query.filter(Bandpass.name == name)\
-                .filter(Bandpass.system == system)
+            .filter(Bandpass.system == system)
 
     def __init__(self, name, system):
         self.name = name
         self.system = system
 
     def __repr__(self):
-        return "<Bandpass({id})> {name} {sys}".format(id=self.id,
-                name=self.name, sys=self.system)
+        return "<Bandpass({id})> {name} {sys}".format(
+            id=self.id, name=self.name, sys=self.system)
