@@ -62,7 +62,7 @@ def init_catalog(session, name, instrument, band_names, band_system,
     footprint_polys : list
         List of footprint polyons of the catalogs footprint on the sky.
     meta : dict
-        Metadata passed to the Catalog's `meta` HSTORE field.
+        Metadata passed to the Catalog's `meta` JSON field.
     """
     if not meta:
         meta = {}
@@ -78,7 +78,8 @@ def init_catalog(session, name, instrument, band_names, band_system,
 
 
 def add_observations(session, name, instrument, band_names, band_system,
-                     x, y, ra, dec, mag, mag_err, cfrac):
+                     x, y, ra, dec, mag, mag_err, cfrac,
+                     star_meta=None, obs_meta=None):
     """Insert and observational catalog (Catalog, CatalogStar and Observation
     tables) efficiently with SQLAlchemy Core.
 
@@ -112,6 +113,10 @@ def add_observations(session, name, instrument, band_names, band_system,
         Uncertainties of magnitudes of stars.
     cfrac : ``ndarray``, (n_stars,)
         Completeness fraction of a star in this catalog.
+    star_meta : list
+        List of dictionaries with JSON data for each CatalogStar.
+    obs_meta : list
+        List of list of dictionaries for each observation of each star.
     """
     n_bands = len(band_names)
     n_stars = ra.shape[0]
@@ -124,6 +129,15 @@ def add_observations(session, name, instrument, band_names, band_system,
     assert n_stars == x.shape[0]
     assert n_stars == y.shape[0]
     assert n_stars == cfrac.shape[0]
+    if star_meta is not None:
+        assert len(star_meta) == n_stars
+    else:
+        star_meta = [None] * n_stars
+    if obs_meta is not None:
+        assert len(obs_meta) == n_stars
+        assert len(obs_meta[0]) == n_bands
+    else:
+        obs_meta = [[None] * n_bands] * n_stars
 
     # Pre-fetch catalog ids and band ids
     catalog_id = session.query(Catalog)\
@@ -146,6 +160,7 @@ def add_observations(session, name, instrument, band_names, band_system,
                        "x": float(x[i]), "y": float(y[i]),
                        "ra": float(ra[i]), "dec": float(dec[i]),
                        "cfrac": float(cfrac[i]),
+                       "meta": star_meta[i],
                        "catalog_id": catalog_id,
                        "star_id": None})
         for j, band_id in enumerate(band_ids):
@@ -156,7 +171,8 @@ def add_observations(session, name, instrument, band_names, band_system,
                                  "catalog_star_id": id_star,
                                  "bandpass_id": band_id,
                                  "mag": float(mag[i, j]),
-                                 "mag_err": float(mag_err[i, j])})
+                                 "mag_err": float(mag_err[i, j]),
+                                 "meta": obs_meta[i][j]})
         if i % 10 == 0:
             log.debug("Executing chunk")
             session.execute(CatalogStar.__table__.insert(), cstars)
