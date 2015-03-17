@@ -78,6 +78,10 @@ It is useful to make indices on foreign keys::
 Be sure to run ANALYZE on each table after creating an index.
 Keep in mind that you'll want to drop these indices when ingesting large data sets using ``DROP INDEX idx_name``.
 
+Depending on the application, you may also want to index on the `meta` columns. The general pattern for this is::
+
+    CREATE INDEX ON publishers((info->>'name'));
+
 Connecting to a Session
 -----------------------
 
@@ -188,7 +192,7 @@ The ``catalog`` table has a ``footprint`` column that lets us easily perform cov
     session = Session()
 
     # define a coordinate to test catalog coverage
-    coord = SkyCoord(9.38891666667 * u.deg, 40.0101944444 * u.deg)
+    coord = SkyCoord(10.38891666667 * u.deg, 40.0101944444 * u.deg)
     # convert the coordinate to a WKT form for PostGIS
     point = point_str(coord.ra.deg, coord.dec.deg)
 
